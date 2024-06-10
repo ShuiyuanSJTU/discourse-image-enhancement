@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-MyPluginModule::Engine.routes.draw do
-  get "/examples" => "examples#index"
+DiscourseImageEnhancement::Engine.routes.draw do
+  get "/image-search" => "image_enhancement#index"
   # define routes here
 end
 
-Discourse::Application.routes.draw { mount ::MyPluginModule::Engine, at: "my-plugin" }
+Discourse::Application.routes.draw { mount ::DiscourseImageEnhancement::Engine, at: "/" }

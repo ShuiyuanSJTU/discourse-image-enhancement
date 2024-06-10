@@ -1,0 +1,28 @@
+<tr class="img-search-result-entries topic-list-item" role="list">
+  <td class="img-search-img">
+    <div class="img-thumbnail">
+      <a href={{@resultEntry.url}}>
+        <img class="background-thumbnail" src="{{this.imageSrc}}" srcset="{{this.imageSrcSet}}" alt="{{@resultEntry.text}}" />
+        <img class="main-thumbnail" src="{{this.imageSrc}}" srcset="{{this.imageSrcSet}}" alt="{{@resultEntry.text}}" />
+      </a>
+    </div>
+  </td>
+  <td class="img-search-activity">
+    {{@resultEntry.text}}
+  </td>
+  <td class="img-search-topic-title topic-list-data">
+    <span class="link-top-line">
+      {{@resultEntry.text}}
+    </span>
+    <div class="link-bottom-line">
+      {{category-link topic.category}}
+      {{discourse-tags topic mode="list" tagsForUser=tagsForUser}}
+    </div>
+  </td>
+  <td class="img-search-post">
+    {{@resultEntry.text}}
+  </td>
+  <td class="img-search-posters">
+    {{@resultEntry.text}}
+  </td>
+</tr>

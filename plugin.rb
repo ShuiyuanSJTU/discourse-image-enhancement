@@ -1,21 +1,41 @@
 # frozen_string_literal: true
 
-# name: discourse-plugin-name
+# name: discourse-image-enhancement
 # about: TODO
 # meta_topic_id: TODO
-# version: 0.0.1
-# authors: Discourse
-# url: TODO
+# version: 0.0.0-dev1
+# authors: pangbo
+# url: https://github.com/ShuiyuanSJTU/discourse-image-enhancement
 # required_version: 2.7.0
 
-enabled_site_setting :plugin_name_enabled
+enabled_site_setting :image_enhancement_enabled
 
-module ::MyPluginModule
-  PLUGIN_NAME = "discourse-plugin-name"
+module ::DiscourseImageEnhancement
+  PLUGIN_NAME = "discourse-image-enhancement"
 end
 
-require_relative "lib/my_plugin_module/engine"
+require_relative "lib/discourse_image_enhancement/engine.rb"
+register_asset "stylesheets/common/discourse-image-enhancement.scss"
+
+module ::DiscourseImageEnhancement
+  
+end
 
 after_initialize do
-  # Code which should run after Rails has finished booting
+  # require_relative "lib/discourse_image_enhancement.rb"
+  require_relative "app/controllers/image_enhancement_controller.rb"
+  require_relative "app/models/image_search_data.rb"
+  require_relative "app/jobs/regular/post_image_enhance_process.rb"
+
+  module ::DiscourseImageEnhancement
+    module OverridePullHotlinkedImages
+      def execute(args)
+        super(args)
+        if SiteSetting.image_enhancement_enabled
+          Jobs.enqueue(:post_image_enhance_process, post_id: args[:post_id])
+        end
+      end
+    end
+    ::Jobs::PullHotlinkedImages.prepend OverridePullHotlinkedImages
+  end
 end

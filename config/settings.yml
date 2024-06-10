@@ -1,4 +1,26 @@
-TODO_plugin_name:
-  plugin_name_enabled:
+discourse_image_enhancement:
+  image_enhancement_enabled:
     default: false
     client: true
+  image_search_enabled:
+    default: false
+    client: true
+  image_enhancement_min_image_width:
+    default: 100
+    client: false
+  image_enhancement_min_image_height:
+    default: 100
+    client: false
+  image_enhancement_max_image_size_kb:
+    default: 4096
+    client: false
+  image_enhancement_analyze_service_endpoint:
+    default: ''
+    client: false
+  image_enhancement_max_images_per_post:
+    default: 5
+    client: false
+  image_enhancement_ignored_tags:
+    type: tag_list
+    default: ''
+    client: false
