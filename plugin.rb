@@ -14,15 +14,10 @@ module ::DiscourseImageEnhancement
   PLUGIN_NAME = "discourse-image-enhancement"
 end
 
-require_relative "lib/discourse_image_enhancement/engine.rb"
 register_asset "stylesheets/common/discourse-image-enhancement.scss"
-
-module ::DiscourseImageEnhancement
   
-end
-
 after_initialize do
-  # require_relative "lib/discourse_image_enhancement.rb"
+  require_relative "lib/discourse_image_enhancement.rb"
   require_relative "app/controllers/image_enhancement_controller.rb"
   require_relative "app/models/image_search_data.rb"
   require_relative "app/jobs/regular/post_image_enhance_process.rb"
