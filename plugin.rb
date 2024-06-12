@@ -10,17 +10,17 @@
 
 enabled_site_setting :image_enhancement_enabled
 
-module ::DiscourseImageEnhancement
-  PLUGIN_NAME = "discourse-image-enhancement"
-  class Engine < ::Rails::Engine
-    engine_name PLUGIN_NAME
-    isolate_namespace DiscourseImageEnhancement
-  end
-end
-
 register_asset "stylesheets/common/discourse-image-enhancement.scss"
-  
+
 after_initialize do
+  module ::DiscourseImageEnhancement
+    PLUGIN_NAME ||= "discourse-image-enhancement".freeze
+    class Engine < ::Rails::Engine
+      engine_name PLUGIN_NAME
+      isolate_namespace DiscourseImageEnhancement
+    end
+  end
+
   require_relative "lib/discourse_image_enhancement.rb"
   require_relative "app/controllers/image_enhancement_controller.rb"
   require_relative "app/models/image_search_data.rb"
@@ -40,8 +40,7 @@ after_initialize do
 
   DiscourseImageEnhancement::Engine.routes.draw do
     get "/image-search" => "image_enhancement#index"
-    # define routes here
   end
   
-  Discourse::Application.routes.draw { mount ::DiscourseImageEnhancement::Engine, at: "/" }
+  Discourse::Application.routes.append { mount ::DiscourseImageEnhancement::Engine, at: "/" }
 end

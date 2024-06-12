@@ -8,17 +8,17 @@ describe DiscourseImageEnhancement::ImageAnalysis do
   describe 'save search data' do
     it 'can save data in english' do
       SiteSetting.default_locale = 'en'
-      image = {"sha1"=>"1234", "ocr_text"=>"a car", "description"=>"a flying car", "success"=>true}
+      image = {"sha1"=>"1234", "ocr_result"=>["a car","a man"], "description"=>"a flying car", "success"=>true}
       DiscourseImageEnhancement::ImageAnalysis.save_analyzed_image_data(image)
-      expect(ImageSearchData.find_by(sha1: "1234").ocr_text).to eq("a car")
+      expect(ImageSearchData.find_by(sha1: "1234").ocr_text).to eq("a car\na man")
       expect(ImageSearchData.find_by(sha1: "1234").description_search_data).to eq("'car':3 'fli':2")
     end
 
     it 'can save data in chinese' do
       SiteSetting.default_locale = 'zh_CN'
-      image = {"sha1"=>"1234", "ocr_text"=>"一辆车", "description"=>"一辆飞行的汽车"}
+      image = {"sha1"=>"1234", "ocr_result"=>["一辆车","天空"], "description"=>"一辆飞行的汽车"}
       DiscourseImageEnhancement::ImageAnalysis.save_analyzed_image_data(image)
-      expect(ImageSearchData.find_by(sha1: "1234").ocr_text).to eq("一辆车")
+      expect(ImageSearchData.find_by(sha1: "1234").ocr_text).to eq("一辆车\n天空")
       expect(ImageSearchData.find_by(sha1: "1234").description_search_data).to eq("'一辆':1 '汽车':3 '飞行':2")
     end
   end
@@ -49,7 +49,7 @@ describe DiscourseImageEnhancement::ImageAnalysis do
       SiteSetting.image_enhancement_analyze_service_endpoint = api_endpoint
       SiteSetting.default_locale = 'en'
       WebMock.stub_request(:post, api_endpoint).to_return(
-        body: {"images":[{sha1: image_upload.sha1, ocr_text: "a car", description: "a flying car", success: true}]}.to_json
+        body: {"images":[{sha1: image_upload.sha1, ocr_result: ["a car"], description: "a flying car", success: true}]}.to_json
       )
     end
     it 'can analyze post' do
