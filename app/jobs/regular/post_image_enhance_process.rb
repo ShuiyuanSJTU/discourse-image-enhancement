@@ -8,7 +8,7 @@ module ::Jobs
       return unless post
 
       if SiteSetting.image_enhancement_enabled
-        ::DiscourseImageEnhancement::ImageEnhancement.process_post(post)
+        ::DiscourseImageEnhancement::ImageAnalysis.process_post(post)
       end
     end
   end

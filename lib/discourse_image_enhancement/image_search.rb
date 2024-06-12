@@ -10,33 +10,40 @@ module ::DiscourseImageEnhancement
 
     def search_images
       return nil if @term.blank? || (!@ocr && !@description)
-      term = Search.prepare_data(@term, :query)
       ts_config = Search.ts_config
+      # user input will be quoted after to_tsquery, we can safely interpolate it
+      safe_term_tsquery = Search.ts_query(term: Search.prepare_data(@term, :query),ts_config: Search.ts_config)
+
       conditions = []
       parameters = []
 
-      if ocr
-        conditions << "ocr_text_search_data @@ to_tsquery(?, ?)"
-        parameters += [ts_config, @term]
+      if @ocr
+        conditions << "ocr_text_search_data @@ #{safe_term_tsquery}"
       end
 
       if @description
-        conditions << "description_search_data @@ to_tsquery(?, ?)"
-        parameters += [ts_config, @term]
+        conditions << "description_search_data @@ #{safe_term_tsquery}"
       end
 
-      if @conditions.any?
-        images = ImageSearchData.where(conditions.join(' OR '), *parameters)
+      if conditions.any?
+        images = ImageSearchData.where(conditions.join(' OR '))
         if @ocr && @description
-          images = images.order("ts_rank_cd(#{ts_config}, ocr_text_search_data, to_tsquery(?, ?)) * 1.5 + ts_rank_cd(#{ts_config}, description_search_data, to_tsquery(?, ?)) DESC", ts_config, @term, ts_config, @term)
+          images = images.order(<<-SQL.squish)
+            ts_rank_cd(ocr_text_search_data, #{safe_term_tsquery}) * 1.5 +
+            ts_rank_cd(description_search_data, #{safe_term_tsquery}) DESC
+          SQL
         elsif ocr
-          images = images.order("ts_rank_cd(#{ts_config}, ocr_text_search_data, to_tsquery(?, ?)) DESC", ts_config, @term)
+          images = images.order(<<-SQL.squish)
+            ts_rank_cd(ocr_text_search_data, #{safe_term_tsquery}) DESC
+          SQL
         elsif description
-          images = images.order("ts_rank_cd(#{ts_config}, description_search_data, to_tsquery(?, ?)) DESC", ts_config, @term)
+          images = images.order(<<-SQL.squish)
+            ts_rank_cd(description_search_data, #{safe_term_tsquery}) DESC
+          SQL
         end
       end
 
-      sha1 = images.limit(limit).pluck(:sha1)
+      sha1 = images.limit(@limit).pluck(:sha1)
       
       Upload.where(original_sha1: sha1).or(Upload.where(sha1: sha1, original_sha1: nil))
     end

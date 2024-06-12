@@ -12,6 +12,10 @@ enabled_site_setting :image_enhancement_enabled
 
 module ::DiscourseImageEnhancement
   PLUGIN_NAME = "discourse-image-enhancement"
+  class Engine < ::Rails::Engine
+    engine_name PLUGIN_NAME
+    isolate_namespace DiscourseImageEnhancement
+  end
 end
 
 register_asset "stylesheets/common/discourse-image-enhancement.scss"
@@ -33,4 +37,11 @@ after_initialize do
     end
     ::Jobs::PullHotlinkedImages.prepend OverridePullHotlinkedImages
   end
+
+  DiscourseImageEnhancement::Engine.routes.draw do
+    get "/image-search" => "image_enhancement#index"
+    # define routes here
+  end
+  
+  Discourse::Application.routes.draw { mount ::DiscourseImageEnhancement::Engine, at: "/" }
 end

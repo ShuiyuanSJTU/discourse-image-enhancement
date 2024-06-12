@@ -31,15 +31,16 @@ module ::DiscourseImageEnhancement
           next unless image["success"]
           save_analyzed_image_data(image)
         end
+        result
       end
     end
 
     def self.save_analyzed_image_data(image)
       params = {
         sha1: image["sha1"],
-        ocr_text: image["ocr_text"],
+        ocr_text: image["ocr_result"].join("\n"),
         description: image["description"],
-        ocr_text_search_data: Search.prepare_data(image["ocr_text"]),
+        ocr_text_search_data: Search.prepare_data(image["ocr_result"].join("\n")),
         description_search_data: Search.prepare_data(image["description"]),
         ts_config: Search.ts_config
       }
