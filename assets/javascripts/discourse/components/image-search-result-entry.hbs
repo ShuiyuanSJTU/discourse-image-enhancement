@@ -1,28 +1,42 @@
 <tr class="img-search-result-entries topic-list-item" role="list">
   <td class="img-search-img">
     <div class="img-thumbnail">
-      <a href={{@resultEntry.url}}>
+      <a href={{@resultEntry.link_target}}>
         <img class="background-thumbnail" src="{{this.imageSrc}}" srcset="{{this.imageSrcSet}}" alt="{{@resultEntry.text}}" />
         <img class="main-thumbnail" src="{{this.imageSrc}}" srcset="{{this.imageSrcSet}}" alt="{{@resultEntry.text}}" />
       </a>
     </div>
   </td>
   <td class="img-search-activity">
-    {{@resultEntry.text}}
+    <span class="date">
+      {{format-date this.post.created_at format="tiny"}}
+    </span>
   </td>
-  <td class="img-search-topic-title topic-list-data">
-    <span class="link-top-line">
-      {{@resultEntry.text}}
+  <td class="img-search-topic-title topic-list-data main-link">
+    <span class="link-top-line ">
+      <a href={{@resultEntry.link_target}}
+        class="title raw-link raw-topic-link" 
+        role='heading' aria-level="2"
+        {{on "click" this.goToPath}}
+        >
+        {{this.topic.fancy_title}}
+      </a>
     </span>
     <div class="link-bottom-line">
-      {{category-link topic.category}}
-      {{discourse-tags topic mode="list" tagsForUser=tagsForUser}}
+      {{category-link this.topic.category}}
+      {{discourse-tags this.topic mode="list" tagsForUser=tagsForUser}}
     </div>
   </td>
   <td class="img-search-post">
-    {{@resultEntry.text}}
+    <span class="topic-excerpt post-excerpt">
+      {{this.postContent}}
+    </span>
   </td>
   <td class="img-search-posters">
-    {{@resultEntry.text}}
+    <div class="author">
+      <a href={{this.post.userPath}} data-user-card={{this.post.username}}>
+        {{avatar this.post imageSize="30px"}}
+      </a>
+    </div>
   </td>
 </tr>

@@ -1,11 +1,3 @@
-{{!-- <h1>{{model.name}}</h1> --}}
-
-<h1>TEST</h1>
-
-<hr>
-
-<p>{{model.description}}</p>
-
 <section class="search-container">
   <ScrollTracker
     @name="full-page-search"
@@ -34,9 +26,9 @@
       />
       <ComboBox
         @id="search-type"
-        @value={{this.search_type}}
+        @value={{this.searchType}}
         @content={{this.searchTypes}}
-        @onChange={{fn (mut this.search_type)}}
+        @onChange={{fn (mut this.searchType)}}
         @options={{hash castInteger=true}}
       />
       <DButton
@@ -61,11 +53,10 @@
       {{loading-spinner size="medium"}}
     {{else}}
     {{/if}}
-
-    <ImageSearchResultEntries
-      @resultEntries = {{this.resultEntries}}
-    />
-
   </div>
+
+  <ImageSearchResultEntries
+    @resultEntries = {{this.resultEntries}}
+  />
 
 </section>
