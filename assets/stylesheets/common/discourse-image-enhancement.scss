@@ -8,7 +8,7 @@
     grid-row-gap: 5px;
     border: 0;
   };
-  tr{
+  tr.img-search-result-entry.topic-list-item{
     display: grid;
     height: 300px;
     overflow: hidden;
@@ -16,9 +16,9 @@
     grid-template-columns: 1fr auto;
     grid-template-areas:
         " image image "
-        " title activity"
-        " title posters"
-        " post post";
+        " title activity "
+        " title posters "
+        " post post ";
     td{
       display: block;
       &.img-search-img{
@@ -108,6 +108,14 @@ div.img-search-result-entries {
   }
   .img-search-post{
     overflow: hidden;
-    padding: 5px;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-bottom: 3px;
+    span.topic-excerpt.post-excerpt{
+      color: var(--primary);
+    }
   }
+}
+h3.image-search-no-results{
+  margin: 20px;
 }

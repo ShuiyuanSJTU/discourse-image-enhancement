@@ -5,15 +5,9 @@
     class="hidden"
   />
 
-  <div class="search-header" role="search">
+  <div class="search-header image-search-header" role="search">
     <h1 class="search-page-heading">
-      {{#if this.hasResults}}
-        <div class="result-count" id="search-result-count" aria-live="polite">
-          {{html-safe this.resultCountLabel}}
-        </div>
-      {{else}}
-        {{i18n "search.full_page_title"}}
-      {{/if}}
+      {{i18n "search.full_page_title"}}
     </h1>
     <div class="search-bar">
       <SearchTextField
@@ -55,8 +49,15 @@
     {{/if}}
   </div>
 
+  {{#unless (or this.hasResults this.searching)}}
+    {{#if this.searchActive}}
+      <h3 class="image-search-no-results">{{i18n "search.no_results"}}</h3>
+    {{/if}}
+  {{/unless}}
+
+  {{#if this.hasResults}}
   <ImageSearchResultEntries
     @resultEntries = {{this.resultEntries}}
   />
-
+  {{/if}}
 </section>

@@ -11,7 +11,18 @@ export default class extends Component{
     this.post = this.args.resultEntry.post;
   }
   get imageSrc() {
-    //TODO: optimized image
+    const optimizedImage = this.args.resultEntry.image.optimized_image;
+    if (optimizedImage) {
+      const choosedOptimizedImage = optimizedImage.filter(
+        image => image.height > 300 && image.width > 150
+      ).reduce(
+        (prev, current) =>
+          (prev.height * prev.width < current.height * current.width) ? prev : current
+      );
+      if (choosedOptimizedImage) {
+        return choosedOptimizedImage.url;
+      }
+    }
     return this.args.resultEntry.image.url;
   }
   get postContent() {

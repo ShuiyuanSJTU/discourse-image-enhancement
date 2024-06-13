@@ -29,7 +29,8 @@ class ImageSearchResultItemSerializer < ApplicationSerializer
   def optimized_images
     object.optimized_images.map do |optimized_image|
       {
-        url: UrlHelper.cook_url(optimized_image.url, secure: optimized_image.secure),
+        # we cannot direct check if optimized_image is secured or not, so check the original image
+        url: UrlHelper.cook_url(optimized_image.url, secure: object.image.secure),
         width: optimized_image.width,
         height: optimized_image.height
       }

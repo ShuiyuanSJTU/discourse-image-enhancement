@@ -4,8 +4,8 @@ import { ajax } from "discourse/lib/ajax";
 
 export default class extends Controller {
     searching = false;
+    searchActive = false;
     searchTerm = '';
-    repeat = 1;
     searchResults = {};
 
     // TODO: i18n
@@ -46,8 +46,14 @@ export default class extends Controller {
         return this.get('searchResults').image_search_result?.grouped_results ?? [];
     }
 
+    @computed('resultEntries')
+    get hasResults() {
+        return this.get('resultEntries').length > 0;
+    }
+
     @action
     search() {
+        this.set('searchActive', true);
         if (this.searchTerm.length < 2) {
             this.set('invalidSearch',true);
             return;
