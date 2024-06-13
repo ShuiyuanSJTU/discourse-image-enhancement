@@ -25,6 +25,7 @@ after_initialize do
   require_relative "app/controllers/image_enhancement_controller.rb"
   require_relative "app/models/image_search_data.rb"
   require_relative "app/jobs/regular/post_image_enhance_process.rb"
+  require_relative "app/serializers/image_search_result_serializer.rb"
 
   module ::DiscourseImageEnhancement
     module OverridePullHotlinkedImages
@@ -40,6 +41,7 @@ after_initialize do
 
   DiscourseImageEnhancement::Engine.routes.draw do
     get "/image-search" => "image_enhancement#index"
+    get "/image-search/search" => "image_enhancement#search"
   end
   
   Discourse::Application.routes.append { mount ::DiscourseImageEnhancement::Engine, at: "/" }

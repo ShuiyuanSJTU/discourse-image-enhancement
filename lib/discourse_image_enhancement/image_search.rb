@@ -1,3 +1,5 @@
+require_relative "image_search/image_search_result"
+
 module ::DiscourseImageEnhancement
   class ImageSearch
     
@@ -52,7 +54,8 @@ module ::DiscourseImageEnhancement
       uploads = search_images
       posts = Post.joins(:uploads).merge(uploads)
       posts = filter_post(posts)
-      post.select("posts.*,uploads.id as upload_id").includes(topic: [:category,:tags])
+      # posts
+      ImageSearchResult.new(posts, term: @term, search_ocr: @ocr, search_description: @description)
     end
 
     def filter_post(posts)

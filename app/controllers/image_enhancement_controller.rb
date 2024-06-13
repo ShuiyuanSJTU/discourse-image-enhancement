@@ -7,5 +7,13 @@ module ::DiscourseImageEnhancement
     def index
       render json: { hello: "world" }
     end
+
+    def search
+      term = params.require(:term)
+      ocr = params.fetch(:ocr, 'true') == 'true'
+      description = params.fetch(:description, 'true') == 'true'
+      saerch_results = ImageSearch.new(term, ocr: ocr, description: description).execute
+      render_serialized(saerch_results, ImageSearchResultSerializer)
+    end
   end
 end
