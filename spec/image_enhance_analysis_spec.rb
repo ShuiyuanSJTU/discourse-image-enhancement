@@ -16,7 +16,7 @@ describe DiscourseImageEnhancement::ImageAnalysis do
 
     it 'can save data in chinese' do
       SiteSetting.default_locale = 'zh_CN'
-      image = {"sha1"=>"1234", "ocr_result"=>["一辆车","天空"], "description"=>"一辆飞行的汽车"}
+      image = {"sha1"=>"1234", "ocr_result"=>["一辆车","天空"], "description"=>"一辆飞行的汽车", "success"=>true}
       DiscourseImageEnhancement::ImageAnalysis.save_analyzed_image_data(image)
       expect(ImageSearchData.find_by(sha1: "1234").ocr_text).to eq("一辆车\n天空")
       expect(ImageSearchData.find_by(sha1: "1234").description_search_data).to eq("'一辆':1 '汽车':3 '飞行':2")
@@ -38,6 +38,22 @@ describe DiscourseImageEnhancement::ImageAnalysis do
       post = Fabricate(:post, raw: "![image1](#{upload.short_url})", uploads: [upload])
       extracted_info = DiscourseImageEnhancement::ImageAnalysis.extract_images(post)
       expect(extracted_info.first[:sha1]).to eq(upload.original_sha1)
+    end
+  end
+
+  describe 'can flag post' do
+    it 'can check watched words' do
+      SiteSetting.image_enhancement_auto_flag_ocr = true
+      WatchedWord.create_or_update_word(word: 'car',action: WatchedWord.actions[:flag])
+      result = {
+        "images" => [
+          {"sha1"=>"1234", "ocr_result"=>["a car", "another car"], "description"=>"a flying car", "success"=>true},
+          {"sha1"=>"5678", "ocr_result"=>["a human"], "description"=>"", "success"=>true}
+        ]
+      }
+      post = Fabricate(:post)
+      PostActionCreator.expects(:create).once
+      DiscourseImageEnhancement::ImageAnalysis.check_for_flag(post, result)
     end
   end
 

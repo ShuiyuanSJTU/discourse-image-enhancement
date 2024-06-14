@@ -31,6 +31,7 @@ module ::DiscourseImageEnhancement
           next unless image["success"]
           save_analyzed_image_data(image)
         end
+        check_for_flag(post, result)
         result
       end
     end
@@ -121,6 +122,20 @@ module ::DiscourseImageEnhancement
           sha1: u.original_sha1 || u.sha1,
           url: url
         }
+      end
+    end
+
+    def self.check_for_flag(post, result)
+      return unless SiteSetting.image_enhancement_auto_flag_ocr
+      ocr_text = result["images"].filter{ |image| image["success"]}\
+        .map{ |image| image["ocr_result"].join(" ") }.join("\n")
+      if WordWatcher.new(ocr_text).should_flag?
+        PostActionCreator.create(
+          Discourse.system_user,
+          post,
+          :inappropriate,
+          reason: :watched_word,
+        )
       end
     end
   end
