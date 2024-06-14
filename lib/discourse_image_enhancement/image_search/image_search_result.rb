@@ -25,11 +25,12 @@ class DiscourseImageEnhancement::ImageSearch
     end
 
     def initialize(result, term: nil, search_ocr: true, search_description: true, has_more: false)
-      result = result.select("posts.*,uploads.id as upload_id").includes(topic: [:tags]).includes(:user)
+      result = result.select("posts.*,uploads.id as upload_id").includes(topic: [:tags, :category]).includes(:user)
       @posts = result
       @users = @posts.map(&:user)
       @topics = @posts.map(&:topic)
-      @images = Upload.where(id: result.map(&:upload_id)).includes(:optimized_images)
+      uploads = Upload.where(id: result.map(&:upload_id)).includes(:optimized_images).group_by(&:id)
+      @images = result.map(&:upload_id).map { |id| uploads[id].first }
       @optimized_images = @images.map(&:optimized_images)
       @term = term
       @search_ocr = search_ocr
