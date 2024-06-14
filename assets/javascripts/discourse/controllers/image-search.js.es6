@@ -21,15 +21,17 @@ export default class extends Controller {
     ];
 
     searchType = this.searchTypes[0].id;
+    _searchType = undefined;
+    _searchTerm = undefined;
     constructor() {
         super(...arguments);
     }
 
     _search() {
         const searchData = {};
-        searchData.term = this.get('searchTerm');
+        searchData.term = this.get('_searchTerm');
         searchData.page = this.get('page');
-        switch(this.get('searchType')){
+        switch(this.get('_searchType')){
             case 'image_search_ocr_and_description':
                 searchData.ocr = true;
                 searchData.description = true;
@@ -74,11 +76,13 @@ export default class extends Controller {
         }
         this.set('invalidSearch', false);
         this.resetSearch();
+        this.set('_searchTerm', this.searchTerm);
+        this.set('_searchType', this.searchType);
         this.set('searching', true);
         this._search().then((result) => {
-            this.set('searchResultEntries', result.image_search_result.grouped_results);
+            this.set('searchResultEntries', Array.from(result.image_search_result.grouped_results));
             this.set('noMoreResults', !result.image_search_result.has_more);
-            this.set('searchResultEntriesCount', this.searchResultEntries.length);
+            this.set('searchResultEntriesCount', this.get('searchResultEntries').length);
             this.set('searching', false);
         });
     }
@@ -91,13 +95,10 @@ export default class extends Controller {
         this._search().then((result) => {
             this.set('noMoreResults', !result.image_search_result.has_more);
             if (result.image_search_result.grouped_results.length > 0) {
-                this.set('searchResultEntries', this.searchResultEntries.concat(result.image_search_result.grouped_results));
-                this.set('searchResultEntriesCount', this.searchResultEntries.length);
+                this.set('searchResultEntries', this.get('searchResultEntries').concat(result.image_search_result.grouped_results));
+                this.set('searchResultEntriesCount', this.get('searchResultEntries').length);
             }
             this.set('loadingMore', false);
         });
-        let newResults = this.get('searchResultEntries');
-        newResults = newResults.concat(newResults);
-        this.set('searchResultEntries', newResults);
     }
 }
