@@ -1,4 +1,4 @@
-discourse_image_enhancement:
+plugins:
   image_enhancement_enabled:
     default: false
     client: true

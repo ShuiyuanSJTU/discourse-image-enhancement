@@ -1,1 +1,11 @@
 en:
+  site_settings:
+    image_enhancement_enabled: "Enable image enhancement plugin"
+    image_search_enabled: "Enable image search"
+    image_enhancement_min_image_width: "Minimum width for image analysis"
+    image_enhancement_min_image_height: "Minimum height for image analysis"
+    image_enhancement_max_image_size_kb: "Maximum file size for image analysis"
+    image_enhancement_analyze_service_endpoint: "Image analysis service endpoint"
+    image_enhancement_max_images_per_post: "Maximum number of images per post for analysis"
+    image_enhancement_ignored_tags: "List of tags to ignore for image analysis"
+    image_enhancement_auto_flag_ocr: "Read OCR text and automatically flag posts"

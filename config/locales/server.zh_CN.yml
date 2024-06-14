@@ -1,0 +1,11 @@
+zh_CN:
+  site_settings:
+    image_enhancement_enabled: "启用图片增强插件"
+    image_search_enabled: "启用图片搜索"
+    image_enhancement_min_image_width: "进行图片分析的最小宽度"
+    image_enhancement_min_image_height: "进行图片分析的最小高度"
+    image_enhancement_max_image_size_kb: "进行图片分析的最大文件大小"
+    image_enhancement_analyze_service_endpoint: "图片分析服务端点"
+    image_enhancement_max_images_per_post: "进行分析的每个帖子的最大图片数量"
+    image_enhancement_ignored_tags: "不进行图片分析的标签列表"
+    image_enhancement_auto_flag_ocr: "读取OCR文本，自动举报帖子"
