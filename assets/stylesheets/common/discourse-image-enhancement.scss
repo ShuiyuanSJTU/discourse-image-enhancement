@@ -20,7 +20,6 @@
         " title posters "
         " post post ";
     td{
-      display: block;
       &.img-search-img{
         grid-area: image;
         min-height: 120px;
@@ -102,17 +101,22 @@ div.img-search-result-entries {
     justify-content: center;
   }
   .img-search-posters{
-    div{
+    display: flex;
+    justify-content: center;
+    div.author{
       margin-right: 5px;
     }
   }
   .img-search-post{
-    overflow: hidden;
     padding-left: 5px;
     padding-right: 5px;
     padding-bottom: 3px;
     span.topic-excerpt.post-excerpt{
       color: var(--primary);
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
   }
 }

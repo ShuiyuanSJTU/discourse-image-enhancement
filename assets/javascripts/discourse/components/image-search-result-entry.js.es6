@@ -11,16 +11,17 @@ export default class extends Component{
     this.post = this.args.resultEntry.post;
   }
   get imageSrc() {
-    const optimizedImage = this.args.resultEntry.image.optimized_image;
-    if (optimizedImage) {
-      const choosedOptimizedImage = optimizedImage.filter(
+    const optimizedImages = this.args.resultEntry.optimized_images;
+    if (optimizedImages) {
+      let chosenOptimizedImage = optimizedImages.filter(
         image => image.height > 300 && image.width > 150
-      ).reduce(
-        (prev, current) =>
-          (prev.height * prev.width < current.height * current.width) ? prev : current
       );
-      if (choosedOptimizedImage) {
-        return choosedOptimizedImage.url;
+      if (chosenOptimizedImage?.length > 0) {
+        chosenOptimizedImage = chosenOptimizedImage.reduce(
+          (prev, current) =>
+            (prev.height * prev.width < current.height * current.width) ? prev : current
+        );
+        return chosenOptimizedImage.url;
       }
     }
     return this.args.resultEntry.image.url;
@@ -28,6 +29,8 @@ export default class extends Component{
   get postContent() {
     let parser = new DOMParser();
     let doc = parser.parseFromString(this.post.cooked, "text/html");
+    doc.querySelectorAll('.lightbox-wrapper').forEach(wrapper => wrapper.remove());
+    doc.querySelectorAll('.onebox').forEach(onebox => onebox.remove());
     let textContent = doc.body.textContent;
     return textContent;
   }

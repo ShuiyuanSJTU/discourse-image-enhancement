@@ -56,8 +56,16 @@
   {{/unless}}
 
   {{#if this.hasResults}}
-  <ImageSearchResultEntries
-    @resultEntries = {{this.resultEntries}}
-  />
+  <LoadMore @selector=".img-search-result-entry" @action={{action "loadMore"}}>
+    <ImageSearchResultEntries
+      @resultEntries = {{this.resultEntries}}
+    />
+    {{#if this.loadingMore}}
+      {{loading-spinner size="medium"}}
+    {{/if}}
+    {{#if this.noMoreResults}}
+      <div class="no-more-results">{{i18n "search.no_more_results"}}</div>
+    {{/if}}
+  </LoadMore>
   {{/if}}
 </section>

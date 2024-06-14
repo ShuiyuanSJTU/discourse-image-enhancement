@@ -4,9 +4,14 @@ import { ajax } from "discourse/lib/ajax";
 
 export default class extends Controller {
     searching = false;
+    loadingMore = false;
+    noMoreResults = false;
     searchActive = false;
     searchTerm = '';
+    page = 0;
     searchResults = {};
+    searchResultEntries = [];
+    searchResultEntriesCount = 0;
 
     // TODO: i18n
     searchTypes = [
@@ -23,6 +28,7 @@ export default class extends Controller {
     _search() {
         const searchData = {};
         searchData.term = this.get('searchTerm');
+        searchData.page = this.get('page');
         switch(this.get('searchType')){
             case 'image_search_ocr_and_description':
                 searchData.ocr = true;
@@ -40,15 +46,23 @@ export default class extends Controller {
         return ajax('/image-search/search.json', { data: searchData });
     }
 
-    @computed('searching','searchResults')
+    @computed('searching','searchResultEntries')
     get resultEntries() {
         if (this.get('searching')) {return [];}
-        return this.get('searchResults').image_search_result?.grouped_results ?? [];
+        return this.get('searchResultEntries') ?? [];
     }
 
-    @computed('resultEntries')
+    @computed('searchResultEntries')
     get hasResults() {
-        return this.get('resultEntries').length > 0;
+        return this.get('searchResultEntries').length > 0;
+    }
+
+    resetSearch() {
+        this.set('page', 0);
+        this.set('searchResultEntries', []);
+        this.set('searchResultEntriesCount', 0);
+        this.set('loadingMore', false);
+        this.set('noMoreResults', false);
     }
 
     @action
@@ -59,13 +73,31 @@ export default class extends Controller {
             return;
         }
         this.set('invalidSearch', false);
+        this.resetSearch();
         this.set('searching', true);
         this._search().then((result) => {
-            this.set('searchResults', result);
+            this.set('searchResultEntries', result.image_search_result.grouped_results);
+            this.set('noMoreResults', !result.image_search_result.has_more);
+            this.set('searchResultEntriesCount', this.searchResultEntries.length);
             this.set('searching', false);
         });
-        // this.transitionToRoute('image-search', query);
-        // this.set('repeat', this.get('repeat') + 1);
-        console.log('searching for', this.searchType, this.searchTerm);
+    }
+
+    @action
+    loadMore() {
+        if (this.get('searching') || this.get('loadingMore') || this.get('noMoreResults')) {return;}
+        this.set('loadingMore', true);
+        this.set('page', this.page + 1);
+        this._search().then((result) => {
+            this.set('noMoreResults', !result.image_search_result.has_more);
+            if (result.image_search_result.grouped_results.length > 0) {
+                this.set('searchResultEntries', this.searchResultEntries.concat(result.image_search_result.grouped_results));
+                this.set('searchResultEntriesCount', this.searchResultEntries.length);
+            }
+            this.set('loadingMore', false);
+        });
+        let newResults = this.get('searchResultEntries');
+        newResults = newResults.concat(newResults);
+        this.set('searchResultEntries', newResults);
     }
 }

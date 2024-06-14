@@ -12,7 +12,8 @@ module ::DiscourseImageEnhancement
       term = params.require(:term)
       ocr = params.fetch(:ocr, 'true') == 'true'
       description = params.fetch(:description, 'true') == 'true'
-      saerch_results = ImageSearch.new(term, ocr: ocr, description: description).execute
+      page = params.fetch(:page, 0).to_i
+      saerch_results = ImageSearch.new(term, ocr: ocr, description: description, page: page).execute
       render_serialized(saerch_results, ImageSearchResultSerializer)
     end
   end

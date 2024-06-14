@@ -3,11 +3,13 @@ require_relative "image_search/image_search_result"
 module ::DiscourseImageEnhancement
   class ImageSearch
     
-    def initialize(term, limit: 10, ocr: true, description: true)
+    def initialize(term, limit: 20, ocr: true, description: true, page: 0)
       @term = term
       @limit = limit
+      @page = page
       @ocr = ocr
       @description = description
+      @has_more = true
     end
 
     def search_images
@@ -34,19 +36,21 @@ module ::DiscourseImageEnhancement
             ts_rank_cd(ocr_text_search_data, #{safe_term_tsquery}) * 1.5 +
             ts_rank_cd(description_search_data, #{safe_term_tsquery}) DESC
           SQL
-        elsif ocr
+        elsif @ocr
           images = images.order(<<-SQL.squish)
             ts_rank_cd(ocr_text_search_data, #{safe_term_tsquery}) DESC
           SQL
-        elsif description
+        elsif @description
           images = images.order(<<-SQL.squish)
             ts_rank_cd(description_search_data, #{safe_term_tsquery}) DESC
           SQL
         end
       end
 
-      sha1 = images.limit(@limit).pluck(:sha1)
-      
+      sha1 = images.offset(@page * @limit).limit(@limit).pluck(:sha1)
+
+      @has_more = sha1.length == @limit
+
       Upload.where(original_sha1: sha1).or(Upload.where(sha1: sha1, original_sha1: nil))
     end
 
@@ -54,8 +58,11 @@ module ::DiscourseImageEnhancement
       uploads = search_images
       posts = Post.joins(:uploads).merge(uploads)
       posts = filter_post(posts)
-      # posts
-      ImageSearchResult.new(posts, term: @term, search_ocr: @ocr, search_description: @description)
+      ImageSearchResult.new(posts, 
+        term: @term, 
+        search_ocr: @ocr, 
+        search_description: @description, 
+        has_more: @has_more)
     end
 
     def filter_post(posts)
