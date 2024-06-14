@@ -31,18 +31,16 @@ module ::DiscourseImageEnhancement
 
       if conditions.any?
         images = ImageSearchData.where(conditions.join(' OR '))
+        images = images.joins("LEFT JOIN uploads ON (image_search_data.sha1 = uploads.sha1 OR image_search_data.sha1 = uploads.original_sha1)")
         if @ocr && @description
-          images = images.order(<<-SQL.squish)
-            ts_rank_cd(ocr_text_search_data, #{safe_term_tsquery}) * 1.5 +
-            ts_rank_cd(description_search_data, #{safe_term_tsquery}) DESC
-          SQL
+          images = images.order("uploads.created_at": :desc)
         elsif @ocr
           images = images.order(<<-SQL.squish)
-            ts_rank_cd(ocr_text_search_data, #{safe_term_tsquery}) DESC
+            (ts_rank_cd(ocr_text_search_data, #{safe_term_tsquery}), uploads.created_at) DESC
           SQL
         elsif @description
           images = images.order(<<-SQL.squish)
-            ts_rank_cd(description_search_data, #{safe_term_tsquery}) DESC
+            (ts_rank_cd(description_search_data, #{safe_term_tsquery}), uploads.created_at) DESC
           SQL
         end
       end
