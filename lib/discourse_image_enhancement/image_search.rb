@@ -55,7 +55,7 @@ module ::DiscourseImageEnhancement
     def execute
       uploads = search_images
       posts = Post.joins(:uploads).merge(uploads)
-      posts = filter_post(posts)
+      posts = filter_post(posts).order("posts.created_at DESC")
       ImageSearchResult.new(posts, 
         term: @term, 
         search_ocr: @ocr, 

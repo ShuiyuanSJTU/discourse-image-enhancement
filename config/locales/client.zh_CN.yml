@@ -1,1 +1,5 @@
-en:
+zh_CN:
+  js:
+    image-search:
+      title: "图片搜索"
+      description: "输入图片中文字或描述图片内容以搜索相关图片、帖子或主题"

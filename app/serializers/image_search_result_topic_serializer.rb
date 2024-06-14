@@ -7,4 +7,4 @@ class ImageSearchResultTopicSerializer < BasicTopicSerializer
   def category_id
     object.category&.id
   end
-end  
+end

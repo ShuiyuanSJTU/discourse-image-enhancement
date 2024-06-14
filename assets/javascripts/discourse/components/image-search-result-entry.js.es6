@@ -32,6 +32,9 @@ export default class extends Component{
     doc.querySelectorAll('.lightbox-wrapper').forEach(wrapper => wrapper.remove());
     doc.querySelectorAll('.onebox').forEach(onebox => onebox.remove());
     let textContent = doc.body.textContent;
+    if (this.post.post_number > 1) {
+      textContent = `#${this.post.post_number} ${textContent}`;
+    }
     return textContent;
   }
 

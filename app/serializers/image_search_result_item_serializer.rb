@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
 require_relative "image_search_result_topic_serializer"
+require_relative "image_search_result_post_serializer"
 
 class ImageSearchResultItemSerializer < ApplicationSerializer
   attributes :image, :optimized_images, :link_target
   attributes :post, :user, :topic
 
   def post
-    BasicPostSerializer.new(object.post, scope: scope, root: false).as_json
+    ImageSearchResultPostSerializer.new(object.post, scope: scope, root: false).as_json
   end
 
   def user
