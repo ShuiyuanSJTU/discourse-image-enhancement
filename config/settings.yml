@@ -31,3 +31,6 @@ plugins:
   image_enhancement_auto_flag_ocr:
     default: false
     client: false
+  image_enhancement_max_retry_times_per_image:
+    default: 3
+    client: false

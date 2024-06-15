@@ -10,3 +10,4 @@ zh_CN:
     image_enhancement_ignored_tags: "不进行图片分析的标签列表"
     image_enhancement_ignored_categories: "不进行图片分析的类别列表"
     image_enhancement_auto_flag_ocr: "读取OCR文本，自动举报帖子"
+    image_enhancement_max_retry_times_per_image: "每张图片的最大重试的分析次数"

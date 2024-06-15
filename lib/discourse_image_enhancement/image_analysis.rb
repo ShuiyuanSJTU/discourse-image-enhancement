@@ -1,6 +1,6 @@
 module ::DiscourseImageEnhancement
   class ImageAnalysis
-    def self.process_post(post)
+    def self.process_post(post, record_failed: true)
       return nil unless should_analyze_post(post)
       image_info = extract_images(post)
       return nil unless image_info.present?
@@ -25,14 +25,25 @@ module ::DiscourseImageEnhancement
         return nil
       end
 
-      begin
-        result = MultiJson.load(response.body)
-        result["images"].each do |image|
-          next unless image["success"]
-          save_analyzed_image_data(image)
-        end
-        result
+      result = MultiJson.load(response.body)
+      result["images"].each do |image|
+        next unless image["success"]
+        save_analyzed_image_data(image)
       end
+
+      if record_failed
+        success_sha1s = result["images"].select { |i| i["success"] }.map { |i| i["sha1"] }
+        failed_sha1s = image_info.map { |i| i[:sha1] } - success_sha1s
+        if failed_sha1s.present?
+          failed_count = PluginStore.get(PLUGIN_NAME, "failed_count") || {}
+          failed_sha1s.each do |sha1|
+            failed_count[sha1] = (failed_count[sha1] || 0) + 1
+          end
+          PluginStore.set(PLUGIN_NAME, "failed_count", failed_count)
+        end
+      end
+
+      result
     end
 
     def self.save_analyzed_image_data(image)
@@ -53,7 +64,8 @@ module ::DiscourseImageEnhancement
 
     def self.should_analyze_image(upload)
       return false unless upload.present?
-      return true if Filter.filter_upload(Upload.where(id: upload)).count > 0
+      return true if Filter.filter_upload(
+        Upload.where(id: upload), max_retry_times: -1).count > 0
       true
     end
 

@@ -10,3 +10,4 @@ en:
     image_enhancement_ignored_tags: "List of tags to ignore for image analysis"
     image_enhancement_ignored_categories: "List of categories to ignore for image analysis"
     image_enhancement_auto_flag_ocr: "Read OCR text and automatically flag posts"
+    image_enhancement_max_retry_times_per_image: "Maximum number of retries for image analysis per image"

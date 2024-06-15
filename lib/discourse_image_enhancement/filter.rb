@@ -27,7 +27,9 @@ module ::DiscourseImageEnhancement
       posts
     end
 
-    def self.filter_upload(uploads, exclude_existing: true)
+    def self.filter_upload(uploads,
+        exclude_existing: true,
+        max_retry_times: SiteSetting.image_enhancement_max_retry_times_per_image)
       uploads = uploads.where('filesize <= ?', SiteSetting.image_enhancement_max_image_size_kb.kilobytes)
         .where('width >= ?', SiteSetting.image_enhancement_min_image_width)
         .where('height >= ?', SiteSetting.image_enhancement_min_image_height)
@@ -38,6 +40,11 @@ module ::DiscourseImageEnhancement
             FROM image_search_data
             WHERE image_search_data.sha1 = COALESCE(uploads.original_sha1, uploads.sha1)
           )')
+      end
+      if max_retry_times > 0
+        failed_count = PluginStore.get(PLUGIN_NAME, "failed_count") || {}
+        rejected_upload_sha1s = failed_count.select { |_, v| v > max_retry_times }.keys
+        uploads = uploads.where('NOT COALESCE(uploads.original_sha1, uploads.sha1) IN (?)', rejected_upload_sha1s) if rejected_upload_sha1s.present?
       end
       uploads
     end
