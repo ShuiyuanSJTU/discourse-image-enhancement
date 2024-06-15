@@ -64,20 +64,11 @@ module ::DiscourseImageEnhancement
     end
 
     def filter_post(posts)
-      posts = posts.joins(topic: :category)\
-        .where('categories.read_restricted' => false)\
-        .where("topics.archetype" => "regular")\
-        .where("topics.visible" => true)
-      if SiteSetting.tagging_enabled && SiteSetting.image_enhancement_ignored_tags.present?
-        posts = posts.where("NOT EXISTS (
-          SELECT 1
-          FROM topic_tags
-          INNER JOIN tags ON topic_tags.tag_id = tags.id
-          WHERE topic_tags.topic_id = topics.id
-          AND tags.name IN (?)
-        )", SiteSetting.image_enhancement_ignored_tags.split('|'))
-      end
-      posts
+      self.class.filter_post(posts)
+    end
+
+    def self.filter_post(posts)
+      Filter.filter_post(posts)
     end
   end
 end

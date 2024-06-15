@@ -54,26 +54,18 @@ module ::DiscourseImageEnhancement
 
     def self.should_analyze_image(upload)
       return false unless upload.present?
-      return false unless FileHelper.is_supported_image?(upload.original_filename)
-      return false if upload.filesize > SiteSetting.image_enhancement_max_image_size_kb.kilobytes
-      return false if upload.width < SiteSetting.image_enhancement_min_image_width
-      return false if upload.height < SiteSetting.image_enhancement_min_image_height
-      sha1 = upload.original_sha1 || upload.sha1
-      return false if ImageSearchData.find_by(sha1: sha1).present?
+      return true if Filter.filter_upload(Upload.where(id: upload)).count > 0
       true
     end
 
     def self.should_analyze_post(post)
-      return false if post.blank?
-      return true if SiteSetting.image_enhancement_ignored_tags.blank?
-      return false unless post.topic.tags.present?
-      ignored_tags = SiteSetting.image_enhancement_ignored_tags.split("|")
-      return false if post.topic.tags.any? { |t| ignored_tags.include?(t) }
-      true
+      return false if post.blank? || post.id.blank?
+      return true if Filter.filter_post(Post.where(id: post)).count > 0
+      false
     end
 
     def self.extract_images(post)
-      post.uploads.filter { |u| should_analyze_image(u) }.map do |u|
+      Filter.filter_upload(post.uploads).map do |u|
         url = UrlHelper.cook_url(u.url, secure: u.secure)
         url = Upload.signed_url_from_secure_uploads_url(url) if Upload.secure_uploads_url?(url)
         {
