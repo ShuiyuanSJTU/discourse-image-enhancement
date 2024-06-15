@@ -21,7 +21,7 @@ module ::DiscourseImageEnhancement
       end
 
       if response.status != 200
-        Rails.logger.warn("Failed to analyze images for post #{post.id}")
+        Rails.logger.warn("Failed to analyze images for post #{post.id}, #{response.status}: #{response.body}")
         return nil
       end
 
@@ -31,7 +31,6 @@ module ::DiscourseImageEnhancement
           next unless image["success"]
           save_analyzed_image_data(image)
         end
-        check_for_flag(post, result)
         result
       end
     end
@@ -105,22 +104,9 @@ module ::DiscourseImageEnhancement
       true
     end
 
-    def self.extract_images(post)
-      post.uploads.filter { |u| should_analyze_image(u) }.map do |u|
-        url = UrlHelper.cook_url(u.url, secure: u.secure)
-        url = Upload.signed_url_from_secure_uploads_url(url) if Upload.secure_uploads_url?(url)
-        {
-          id: u.id,
-          sha1: u.original_sha1 || u.sha1,
-          url: url
-        }
-      end
-    end
-
-    def self.check_for_flag(post, result)
+    def self.check_for_flag(post)
       return unless SiteSetting.image_enhancement_auto_flag_ocr
-      ocr_text = result["images"].filter{ |image| image["success"]}\
-        .map{ |image| image["ocr_result"].join(" ") }.join("\n")
+      ocr_text = ImageSearchData.find_by_post(post).pluck(:ocr_text).join("\n")
       if WordWatcher.new(ocr_text).should_flag?
         PostActionCreator.create(
           Discourse.system_user,

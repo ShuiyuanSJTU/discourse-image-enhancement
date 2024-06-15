@@ -42,18 +42,23 @@ describe DiscourseImageEnhancement::ImageAnalysis do
   end
 
   describe 'can flag post' do
+    fab!(:image_upload)
     it 'can check watched words' do
       SiteSetting.image_enhancement_auto_flag_ocr = true
       WatchedWord.create_or_update_word(word: 'car',action: WatchedWord.actions[:flag])
       result = {
         "images" => [
-          {"sha1"=>"1234", "ocr_result"=>["a car", "another car"], "description"=>"a flying car", "success"=>true},
+          {"sha1"=> image_upload.sha1 , "ocr_result"=>["a car", "another car"], "description"=>"a flying car", "success"=>true},
           {"sha1"=>"5678", "ocr_result"=>["a human"], "description"=>"", "success"=>true}
         ]
       }
-      post = Fabricate(:post)
+      post = Fabricate(:post, raw: "![image1](#{image_upload.short_url})", uploads: [image_upload])
+      result["images"].each do |image|
+        DiscourseImageEnhancement::ImageAnalysis.save_analyzed_image_data(image)
+      end
+
       PostActionCreator.expects(:create).once
-      DiscourseImageEnhancement::ImageAnalysis.check_for_flag(post, result)
+      DiscourseImageEnhancement::ImageAnalysis.check_for_flag(post)
     end
   end
 
