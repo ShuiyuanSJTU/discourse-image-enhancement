@@ -11,6 +11,10 @@ module ::DiscourseImageEnhancement
     def self.filter_post(posts)
       posts = posts.visible.public_posts.joins(topic: :category)
         .where('categories.read_restricted' => false)
+      if SiteSetting.image_enhancement_ignored_categories.present?
+        posts = posts.where('categories.id NOT IN (?)',
+          SiteSetting.image_enhancement_ignored_categories.split('|').map(&:to_i))
+      end
       if SiteSetting.tagging_enabled && SiteSetting.image_enhancement_ignored_tags.present?
         posts = posts.where("NOT EXISTS (
           SELECT 1

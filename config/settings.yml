@@ -24,6 +24,10 @@ plugins:
     type: tag_list
     default: ''
     client: false
+  image_enhancement_ignored_categories:
+    type: category_list
+    default: ''
+    client: false
   image_enhancement_auto_flag_ocr:
     default: false
     client: false

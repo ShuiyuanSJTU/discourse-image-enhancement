@@ -8,4 +8,5 @@ en:
     image_enhancement_analyze_service_endpoint: "Image analysis service endpoint"
     image_enhancement_max_images_per_post: "Maximum number of images per post for analysis"
     image_enhancement_ignored_tags: "List of tags to ignore for image analysis"
+    image_enhancement_ignored_categories: "List of categories to ignore for image analysis"
     image_enhancement_auto_flag_ocr: "Read OCR text and automatically flag posts"
