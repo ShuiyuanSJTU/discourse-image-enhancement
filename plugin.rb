@@ -25,6 +25,8 @@ after_initialize do
   require_relative "app/controllers/image_enhancement_controller.rb"
   require_relative "app/models/image_search_data.rb"
   require_relative "app/jobs/regular/post_image_enhance_process.rb"
+  require_relative "app/jobs/scheduled/auto_backfill.rb"
+  require_relative "app/jobs/scheduled/auto_cleanup.rb"
   require_relative "app/serializers/image_search_result_serializer.rb"
 
   module ::DiscourseImageEnhancement
