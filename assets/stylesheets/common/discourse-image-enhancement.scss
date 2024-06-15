@@ -100,11 +100,13 @@ div.img-search-result-entries {
     flex-direction: column;
     justify-content: center;
     a.title{
-      padding: 5px 0px;
+      margin: 5px 0px;
+      padding: 0px;
       overflow: hidden;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
+      font-size: var(--font-0-rem);
     }
   }
   .img-search-posters{
