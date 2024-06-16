@@ -55,7 +55,7 @@ module ::DiscourseImageEnhancement
         .where(uploads: {id: filter_upload(Upload, exclude_existing: exclude_existing)})
       if max_images_per_post.present? && max_images_per_post > 0
         posts = posts.group('posts.id')
-        .having('COUNT(uploads.id) <= ? AND COUNT(uploads.id) > 0',SiteSetting.image_enhancement_max_images_per_post)
+        .having('COUNT(uploads.id) <= ? AND COUNT(uploads.id) > 0', max_images_per_post)
         .select('posts.*')
       end
       posts.distinct
