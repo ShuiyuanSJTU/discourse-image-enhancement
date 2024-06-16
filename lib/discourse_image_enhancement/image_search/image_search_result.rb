@@ -16,7 +16,7 @@ class DiscourseImageEnhancement::ImageSearch
   class ImageSearchResult
     include ActiveModel::Serialization
 
-    attr_reader :search_ocr, :search_description, :term, :has_more
+    attr_reader :search_ocr, :search_description, :term
 
     def grouped_results
       @grouped_results ||= @posts.zip(@users, @topics, @images, @optimized_images).map do |post, user, topic, image, optimized_images|
@@ -24,7 +24,23 @@ class DiscourseImageEnhancement::ImageSearch
       end
     end
 
-    def initialize(result, term: nil, search_ocr: true, search_description: true, has_more: false)
+    def has_more
+      @has_more ||= begin
+        return false if @posts.length == 0
+        return false if @limit.present? && @posts.length < @limit
+        true
+      end
+    end
+
+    def initialize(result,
+        term: nil, search_ocr: true, search_description: true,
+        page: 0, limit: nil)
+      @term = term
+      @search_ocr = search_ocr
+      @search_description = search_description
+      @page = page
+      @limit = limit
+
       result = result.select("posts.*,uploads.id as upload_id").includes(topic: [:tags, :category]).includes(:user)
       @posts = result
       @users = @posts.map(&:user)
@@ -32,10 +48,6 @@ class DiscourseImageEnhancement::ImageSearch
       uploads = Upload.where(id: result.map(&:upload_id)).includes(:optimized_images).group_by(&:id)
       @images = result.map(&:upload_id).map { |id| uploads[id].first }
       @optimized_images = @images.map(&:optimized_images)
-      @term = term
-      @search_ocr = search_ocr
-      @search_description = search_description
-      @has_more = has_more
     end
   end
 end

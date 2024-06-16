@@ -18,6 +18,8 @@ module ::DiscourseImageEnhancement
       # user input will be quoted after to_tsquery, we can safely interpolate it
       safe_term_tsquery = Search.ts_query(term: Search.prepare_data(@term, :query),ts_config: Search.ts_config)
 
+      images = Upload.joins("JOIN image_search_data ON COALESCE(uploads.original_sha1, uploads.sha1) = image_search_data.sha1")
+
       conditions = []
       parameters = []
 
@@ -30,37 +32,40 @@ module ::DiscourseImageEnhancement
       end
 
       if conditions.any?
-        images = ImageSearchData.where(conditions.join(' OR '))
-        images = images.joins("LEFT JOIN uploads ON (image_search_data.sha1 = uploads.sha1 OR image_search_data.sha1 = uploads.original_sha1)")
-        if @ocr && @description
-          images = images.order("uploads.created_at": :desc)
-        elsif @ocr
-          images = images.order(<<-SQL.squish)
-            (ts_rank_cd(ocr_text_search_data, #{safe_term_tsquery}), uploads.created_at) DESC
-          SQL
-        elsif @description
-          images = images.order(<<-SQL.squish)
-            (ts_rank_cd(description_search_data, #{safe_term_tsquery}), uploads.created_at) DESC
-          SQL
-        end
+        images = images.where(conditions.join(' OR '))
       end
 
-      sha1 = images.offset(@page * @limit).limit(@limit).pluck(:sha1)
+      images
+    end
 
-      @has_more = sha1.length == @limit
-
-      Upload.where(original_sha1: sha1).or(Upload.where(sha1: sha1, original_sha1: nil))
+    def order_result(posts)
+      if @ocr && @description
+        posts = posts.order("posts.created_at": :desc)
+      elsif @ocr
+        posts = posts.order(<<-SQL.squish)
+          (ts_rank_cd(ocr_text_search_data, #{safe_term_tsquery}), posts.created_at) DESC
+        SQL
+      elsif @description
+        posts = posts.order(<<-SQL.squish)
+          (ts_rank_cd(description_search_data, #{safe_term_tsquery}), posts.created_at) DESC
+        SQL
+      end
+      posts
     end
 
     def execute
-      uploads = search_images
-      posts = Post.joins(:uploads).merge(uploads)
-      posts = filter_post(posts).order("posts.created_at DESC")
+      posts = filter_post(Post).joins(:uploads)
+      search_reslut_images = search_images
+      posts = posts.where(uploads: { id: search_reslut_images })
+      posts = order_result(posts)
+      posts = posts.offset(@page * @limit).limit(@limit)
+
       ImageSearchResult.new(posts, 
         term: @term, 
         search_ocr: @ocr, 
         search_description: @description, 
-        has_more: @has_more)
+        page: @page,
+        limit: @limit)
     end
 
     def filter_post(posts)
