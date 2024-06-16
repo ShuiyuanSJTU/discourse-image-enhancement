@@ -10,7 +10,7 @@ module ::DiscourseImageEnhancement
 
     def self.filter_post(posts)
       posts = posts.visible.public_posts.joins(topic: :category)
-        .where('categories.read_restricted' => false)
+        .where(categories: {read_restricted: false})
       if SiteSetting.image_enhancement_ignored_categories.present?
         posts = posts.where('categories.id NOT IN (?)',
           SiteSetting.image_enhancement_ignored_categories.split('|').map(&:to_i))
@@ -52,7 +52,7 @@ module ::DiscourseImageEnhancement
     def self.posts_need_analysis(exclude_existing: true,
         max_images_per_post: SiteSetting.image_enhancement_max_images_per_post)
       posts = filter_post(Post).joins(:uploads)
-        .merge(filter_upload(Upload, exclude_existing: exclude_existing))
+        .where(uploads: {id: filter_upload(Upload, exclude_existing: exclude_existing)})
       if max_images_per_post.present? && max_images_per_post > 0
         posts = posts.group('posts.id')
         .having('COUNT(uploads.id) <= ? AND COUNT(uploads.id) > 0',SiteSetting.image_enhancement_max_images_per_post)
@@ -67,7 +67,7 @@ module ::DiscourseImageEnhancement
       filter_upload(Upload, 
           exclude_existing: exclude_existing,
           max_retry_times: max_retry_times
-        ).joins(:posts).merge(filter_post(Post))
+        ).joins(:posts).where(posts: {id: filter_post(Post)})
     end
 
     def self.image_search_data_need_remove
