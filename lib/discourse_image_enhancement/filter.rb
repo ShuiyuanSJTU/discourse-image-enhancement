@@ -49,7 +49,8 @@ module ::DiscourseImageEnhancement
       uploads
     end
 
-    def self.posts_need_analysis(exclude_existing: true, max_images_per_post: SiteSetting.image_enhancement_max_images_per_post)
+    def self.posts_need_analysis(exclude_existing: true,
+        max_images_per_post: SiteSetting.image_enhancement_max_images_per_post)
       posts = filter_post(Post).joins(:uploads)
         .merge(filter_upload(Upload, exclude_existing: exclude_existing))
       if max_images_per_post.present? && max_images_per_post > 0
@@ -60,15 +61,21 @@ module ::DiscourseImageEnhancement
       posts.distinct
     end
 
-    def self.uploads_need_analysis(exclude_existing: true)
-      filter_upload(Upload, exclude_existing: exclude_existing)
-        .joins(:posts).merge(filter_post(Post))
+    def self.uploads_need_analysis(
+        exclude_existing: true,
+        max_retry_times: SiteSetting.image_enhancement_max_retry_times_per_image)
+      filter_upload(Upload, 
+          exclude_existing: exclude_existing,
+          max_retry_times: max_retry_times
+        ).joins(:posts).merge(filter_post(Post))
     end
 
     def self.image_search_data_need_remove
       ImageSearchData.where.not(sha1:
-        uploads_need_analysis(exclude_existing: false)
-          .joins("JOIN image_search_data ON image_search_data.sha1 = COALESCE(uploads.original_sha1, uploads.sha1)")
+        uploads_need_analysis(
+            exclude_existing: false,
+            max_retry_times: -1
+          ).joins("JOIN image_search_data ON image_search_data.sha1 = COALESCE(uploads.original_sha1, uploads.sha1)")
           .select("image_search_data.sha1")
       )
     end

@@ -61,4 +61,33 @@ describe DiscourseImageEnhancement::Filter do
       expect(uploads).to eq([image_upload1, image_upload2])
     end
   end
+
+  describe "can filter image_search_data_need_remove" do
+    before {}
+    let(:image_upload1) { Fabricate(:upload) }
+    let(:image_upload2) { Fabricate(:upload) }
+    let!(:post) { Fabricate(:post, uploads: [image_upload1, image_upload2]) }
+    let!(:image_search_data1) { ImageSearchData.create(sha1: image_upload1.sha1) }
+    let!(:image_search_data2) { ImageSearchData.create(sha1: image_upload2.sha1) }
+
+    it 'should not remove normal data' do
+      expect(ImageSearchData.count).to eq(2)
+      expect(DiscourseImageEnhancement::Filter.image_search_data_need_remove).to eq([])
+    end
+
+    it 'should remove data without uploads' do
+      image_upload2.destroy
+      expect(DiscourseImageEnhancement::Filter.image_search_data_need_remove).to eq([image_search_data2])
+    end
+
+    it 'should remove data without posts' do
+      post.destroy
+      expect(DiscourseImageEnhancement::Filter.image_search_data_need_remove).to eq([image_search_data1, image_search_data2])
+    end
+
+    it 'should ignore max_retry_times' do
+      PluginStore.set('discourse-image-enhancement', "failed_count", {image_upload1.sha1 => 4, image_upload2.sha1 => 100})
+      expect(DiscourseImageEnhancement::Filter.image_search_data_need_remove).to eq([])
+    end
+  end
 end

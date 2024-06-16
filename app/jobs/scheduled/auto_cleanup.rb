@@ -26,8 +26,8 @@ module Jobs
 
       def execute(_args)
         return unless SiteSetting.image_enhancement_enabled && SiteSetting.image_search_enabled
-        cleanup_image_search_data
         cleanup_failed_count
+        cleanup_image_search_data
       end
     end
   end
