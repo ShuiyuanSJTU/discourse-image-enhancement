@@ -1,6 +1,7 @@
 import Controller from '@ember/controller';
 import { action, computed } from '@ember/object';
 import { ajax } from "discourse/lib/ajax";
+import I18n from "discourse-i18n";
 
 export default class extends Controller {
     searching = false;
@@ -15,9 +16,18 @@ export default class extends Controller {
 
     // TODO: i18n
     searchTypes = [
-        { name: 'OCR & Description', id: 'image_search_ocr_and_description' },
-        { name: 'OCR', id: 'image_search_ocr' },
-        { name: 'Description', id: 'image_search_description' }
+        {
+            name: I18n.t('image_search.search_type.ocr_and_desc'),
+            id: 'image_search_ocr_and_description'
+        },
+        {
+            name: I18n.t('image_search.search_type.ocr_only'),
+            id: 'image_search_ocr'
+        },
+        {
+            name: I18n.t('image_search.search_type.desc_only'),
+            id: 'image_search_description'
+        }
     ];
 
     searchType = this.searchTypes[0].id;

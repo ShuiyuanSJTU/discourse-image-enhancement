@@ -1,5 +1,9 @@
 zh_CN:
   js:
-    image-search:
+    image_search:
       title: "图片搜索"
       description: "输入图片中文字或描述图片内容以搜索相关图片、帖子或主题"
+      search_type:
+        ocr_and_desc: "综合"
+        ocr_only: "图片文字"
+        desc_only: "图片内容"

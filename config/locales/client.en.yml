@@ -1,5 +1,9 @@
-zh_CN:
+en:
   js:
-    image-search:
+    image_search:
       title: "Image Search"
       description: "Search for related images, posts, or topics by entering text in the image or describing the content of the image"
+      search_type:
+        ocr_and_desc: "Comprehensive"
+        ocr_only: "Image Text"
+        desc_only: "Image Content"
