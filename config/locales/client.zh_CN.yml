@@ -7,3 +7,7 @@ zh_CN:
         ocr_and_desc: "综合"
         ocr_only: "图片文字"
         desc_only: "图片内容"
+    search:
+      advanced:
+        in_topic:
+          label: "在主题中"

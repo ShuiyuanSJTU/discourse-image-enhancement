@@ -35,6 +35,16 @@
       />
     </div>
 
+    <div class="search-filters">
+      <ImageSearchAdvancedOptions
+        @searchTerm={{readonly this.searchTerm}}
+        @onChangeSearchTerm={{fn (mut this.searchTerm)}}
+        @search={{action "search" (hash collapseFilters=true)}}
+        @searchButtonDisabled={{this.searchButtonDisabled}}
+        @expandFilters={{this.expandFilters}}
+      />
+    </div>
+
     <div class="search-notice">
       {{#if this.invalidSearch}}
         <div class="fps-invalid">

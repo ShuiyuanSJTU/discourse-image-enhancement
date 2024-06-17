@@ -13,8 +13,9 @@ export default class extends Controller {
     searchResults = {};
     searchResultEntries = [];
     searchResultEntriesCount = 0;
+    searchButtonDisabled = false;
+    expandFilters = false;
 
-    // TODO: i18n
     searchTypes = [
         {
             name: I18n.t('image_search.search_type.ocr_and_desc'),
@@ -79,11 +80,11 @@ export default class extends Controller {
 
     @action
     search() {
-        this.set('searchActive', true);
         if (this.searchTerm.length < 2) {
             this.set('invalidSearch',true);
             return;
         }
+        this.set('searchActive', true);
         this.set('invalidSearch', false);
         this.resetSearch();
         this.set('_searchTerm', this.searchTerm);

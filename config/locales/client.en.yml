@@ -7,3 +7,7 @@ en:
         ocr_and_desc: "Comprehensive"
         ocr_only: "Image Text"
         desc_only: "Image Content"
+    search:
+      advanced:
+        in_topic:
+          label: "In Topic"
