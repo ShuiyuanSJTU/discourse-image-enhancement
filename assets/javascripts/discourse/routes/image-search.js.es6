@@ -1,9 +1,19 @@
 import Route from '@ember/routing/route';
-import { ajax } from 'discourse/lib/ajax';
 
-export default Route.extend({
-  model() {
-    // return ajax('/admin/snack.json');
+export default class extends Route{
+
+  queryParams = {};
+
+  model(params, transition) {
+    this.queryParams = transition.to.queryParams;
     return {};
   }
-});
+
+  setupController(controller) {
+    const searchTerm = this.queryParams.term;
+    if (searchTerm) {
+      controller.set('searchTerm', searchTerm);
+      controller.search();
+    }
+  }
+}
