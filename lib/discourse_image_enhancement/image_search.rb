@@ -21,7 +21,7 @@ module ::DiscourseImageEnhancement
       return nil if term.blank? || (!@ocr && !@description)
       ts_config = Search.ts_config
       # user input will be quoted after to_tsquery, we can safely interpolate it
-      safe_term_tsquery = Search.ts_query(term: Search.prepare_data(term, :query),ts_config: Search.ts_config)
+      @safe_term_tsquery = Search.ts_query(term: Search.prepare_data(term, :query),ts_config: Search.ts_config)
 
       images = Upload.joins("JOIN image_search_data ON COALESCE(uploads.original_sha1, uploads.sha1) = image_search_data.sha1")
 
@@ -29,11 +29,11 @@ module ::DiscourseImageEnhancement
       parameters = []
 
       if @ocr
-        conditions << "ocr_text_search_data @@ #{safe_term_tsquery}"
+        conditions << "ocr_text_search_data @@ #{@safe_term_tsquery}"
       end
 
       if @description
-        conditions << "description_search_data @@ #{safe_term_tsquery}"
+        conditions << "description_search_data @@ #{@safe_term_tsquery}"
       end
 
       if conditions.any?
@@ -48,11 +48,11 @@ module ::DiscourseImageEnhancement
         posts = posts.order("posts.created_at": :desc)
       elsif @ocr
         posts = posts.order(<<-SQL.squish)
-          (ts_rank_cd(ocr_text_search_data, #{safe_term_tsquery}), posts.created_at) DESC
+          (ts_rank_cd(ocr_text_search_data, #{@safe_term_tsquery}), posts.created_at) DESC
         SQL
       elsif @description
         posts = posts.order(<<-SQL.squish)
-          (ts_rank_cd(description_search_data, #{safe_term_tsquery}), posts.created_at) DESC
+          (ts_rank_cd(description_search_data, #{@safe_term_tsquery}), posts.created_at) DESC
         SQL
       end
       posts
