@@ -104,6 +104,7 @@ module ::DiscourseImageEnhancement
         "Host" => uri.host,
         "User-Agent" => "Discourse/#{Discourse::VERSION::STRING}",
         "X-Discourse-Instance" => Discourse.base_url,
+        "api-key" => SiteSetting.image_enhancement_analyze_service_key
       }
     end
 

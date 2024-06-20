@@ -17,6 +17,10 @@ plugins:
   image_enhancement_analyze_service_endpoint:
     default: ''
     client: false
+  image_enhancement_analyze_service_key:
+    default: ''
+    client: false
+    secret: true
   image_enhancement_max_images_per_post:
     default: 5
     client: false
