@@ -25,9 +25,11 @@ module ::DiscourseImageEnhancement
         return nil
       end
 
+      valid_sha1s = image_info.map { |i| i[:sha1] }
       result = MultiJson.load(response.body)
       result["images"].each do |image|
         next unless image["success"]
+        next unless valid_sha1s.include?(image["sha1"])
         save_analyzed_image_data(image)
       end
 
