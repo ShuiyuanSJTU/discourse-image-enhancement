@@ -51,8 +51,8 @@ module ::DiscourseImageEnhancement
         sha1: image["sha1"],
         ocr_text: image["ocr_result"].join("\n"),
         description: image["description"],
-        ocr_text_search_data: Search.prepare_data(image["ocr_result"].join("\n")),
-        description_search_data: Search.prepare_data(image["description"]),
+        ocr_text_search_data: Search.prepare_data(image["ocr_result"].join("\n"), :index),
+        description_search_data: Search.prepare_data(image["description"], :index),
         ts_config: Search.ts_config
       }
       DB.exec(<<~SQL, params)
