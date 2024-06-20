@@ -108,17 +108,6 @@ module ::DiscourseImageEnhancement
       }
     end
 
-    def self.should_analyze_image?(upload)
-      return false unless upload.present?
-      return false unless FileHelper.is_supported_image?(upload.original_filename)
-      return false if upload.filesize > SiteSetting.image_enhancement_max_image_size_kb.kilobytes
-      return false if upload.width < SiteSetting.image_enhancement_min_image_width
-      return false if upload.height < SiteSetting.image_enhancement_min_image_height
-      sha1 = upload.original_sha1 || upload.sha1
-      return false if ImageSearchData.find_by(sha1: sha1).present?
-      true
-    end
-
     def self.check_for_flag(post)
       return unless SiteSetting.image_enhancement_auto_flag_ocr
       ocr_text = ImageSearchData.find_by_post(post).pluck(:ocr_text).join("\n")
