@@ -54,6 +54,8 @@ export default class ImageSearchAdvancedOptions extends SearchAdvancedOptions {
       } else {
         searchTerm += ` topic:${topicFilter}`;
       }
+    } else {
+      searchTerm = searchTerm.replace(match[0], "");
     }
     this._updateSearchTerm(searchTerm);
   }
