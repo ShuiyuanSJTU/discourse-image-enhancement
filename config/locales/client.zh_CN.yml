@@ -8,6 +8,8 @@ zh_CN:
         ocr_only: "图片文字"
         desc_only: "图片内容"
     search:
+      type:
+        images: "图片"
       advanced:
         in_topic:
           label: "在主题中"
