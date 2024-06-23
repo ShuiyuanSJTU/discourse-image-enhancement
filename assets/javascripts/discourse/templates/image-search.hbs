@@ -20,9 +20,9 @@
       />
       <ComboBox
         @id="search-type"
-        @value={{this.searchType}}
+        @value={{this.search_type}}
         @content={{this.searchTypes}}
-        @onChange={{fn (mut this.searchType)}}
+        @onChange={{fn (mut this.search_type)}}
         @options={{hash castInteger=true}}
       />
       <DButton

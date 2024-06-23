@@ -4,15 +4,9 @@ export default class extends Route{
 
   queryParams = {};
 
-  model(params, transition) {
-    this.queryParams = transition.to.queryParams;
-    return {};
-  }
-
   setupController(controller) {
-    const searchTerm = this.queryParams.term;
-    if (searchTerm) {
-      controller.set('searchTerm', searchTerm);
+    if (controller.q) {
+      controller.set('searchTerm', controller.q);
       controller.search();
     }
   }

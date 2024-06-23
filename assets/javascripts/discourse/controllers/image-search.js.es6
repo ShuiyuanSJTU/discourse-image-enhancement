@@ -1,6 +1,8 @@
 import Controller from '@ember/controller';
-import { action, computed } from '@ember/object';
+import { action } from '@ember/object';
+import { observes } from "@ember-decorators/object";
 import { ajax } from "discourse/lib/ajax";
+import discourseComputed from "discourse-common/utils/decorators";
 import I18n from "discourse-i18n";
 
 export default class extends Controller {
@@ -15,6 +17,11 @@ export default class extends Controller {
     searchResultEntriesCount = 0;
     searchButtonDisabled = false;
     expandFilters = false;
+    queryParams = [
+        "q",
+        "search_type"
+    ];
+    q = undefined;
 
     searchTypes = [
         {
@@ -31,18 +38,17 @@ export default class extends Controller {
         }
     ];
 
-    searchType = this.searchTypes[0].id;
-    _searchType = undefined;
-    _searchTerm = undefined;
+    search_type = this.searchTypes[0].id;
+
     constructor() {
         super(...arguments);
     }
 
     _search() {
         const searchData = {};
-        searchData.term = this.get('_searchTerm');
+        searchData.term = this.get('q');
         searchData.page = this.get('page');
-        switch(this.get('_searchType')){
+        switch(this.get('search_type')){
             case 'image_search_ocr_and_description':
                 searchData.ocr = true;
                 searchData.description = true;
@@ -59,14 +65,14 @@ export default class extends Controller {
         return ajax('/image-search/search.json', { data: searchData });
     }
 
-    @computed('searching','searchResultEntries')
-    get resultEntries() {
+    @discourseComputed('searching','searchResultEntries')
+    resultEntries() {
         if (this.get('searching')) {return [];}
         return this.get('searchResultEntries') ?? [];
     }
 
-    @computed('searchResultEntries')
-    get hasResults() {
+    @discourseComputed('searchResultEntries')
+    hasResults() {
         return this.get('searchResultEntries').length > 0;
     }
 
@@ -78,6 +84,14 @@ export default class extends Controller {
         this.set('noMoreResults', false);
     }
 
+    @observes("search_type")
+    triggerSearchOnTypeChange() {
+      if (this.searchActive) {
+        this.resetSearch();
+        this._search();
+      }
+    }
+
     @action
     search() {
         if (this.searchTerm.length < 2) {
@@ -87,9 +101,8 @@ export default class extends Controller {
         this.set('searchActive', true);
         this.set('invalidSearch', false);
         this.resetSearch();
-        this.set('_searchTerm', this.searchTerm);
-        this.set('_searchType', this.searchType);
         this.set('searching', true);
+        this.set('q', this.searchTerm);
         this._search().then((result) => {
             this.set('searchResultEntries', Array.from(result.image_search_result.grouped_results));
             this.set('noMoreResults', !result.image_search_result.has_more);
