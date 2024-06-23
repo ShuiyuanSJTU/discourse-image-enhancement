@@ -47,11 +47,15 @@ module ::DiscourseImageEnhancement
       if @ocr && @description
         posts = posts.order("posts.created_at": :desc)
       elsif @ocr
-        posts = posts.order(<<-SQL.squish)
+        posts = posts.joins(:uploads)
+          .joins("JOIN image_search_data ON COALESCE(uploads.original_sha1, uploads.sha1) = image_search_data.sha1")
+          .order(<<-SQL.squish)
           (ts_rank_cd(ocr_text_search_data, #{@safe_term_tsquery}), posts.created_at) DESC
         SQL
       elsif @description
-        posts = posts.order(<<-SQL.squish)
+        posts = posts.joins(:uploads)
+          .joins("JOIN image_search_data ON COALESCE(uploads.original_sha1, uploads.sha1) = image_search_data.sha1")
+          .order(<<-SQL.squish)
           (ts_rank_cd(description_search_data, #{@safe_term_tsquery}), posts.created_at) DESC
         SQL
       end
