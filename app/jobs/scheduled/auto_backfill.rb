@@ -10,8 +10,8 @@ module Jobs
         start_time = Time.now
         backfill_posts = ::DiscourseImageEnhancement::Filter
           .posts_need_analysis
-          .distinct.order(id: :desc)
-        backfill_posts.find_each do |post|
+          .distinct
+        backfill_posts.find_each(order: :desc) do |post|
           break if Time.now - start_time > 50.minutes
           ::DiscourseImageEnhancement::ImageAnalysis.process_post(post)
         end
