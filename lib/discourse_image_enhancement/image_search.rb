@@ -65,14 +65,13 @@ module ::DiscourseImageEnhancement
     def execute
       term = process_advanced_search!(@term)
 
-      posts = filter_post(Post)
-      posts = apply_advanced_filters(posts)
+      posts = apply_advanced_filters(Post.visible.public_posts)
 
       search_reslut_images = search_images(term)
       posts = posts.joins(:uploads).where(
         uploads: { id: search_reslut_images }
       )
-      posts = order_result(posts)
+      posts = posts.order("posts.id": :desc)
       posts = posts.offset(@page * @limit).limit(@limit)
 
       ImageSearchResult.new(posts, 

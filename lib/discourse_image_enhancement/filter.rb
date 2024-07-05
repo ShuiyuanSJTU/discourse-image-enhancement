@@ -58,7 +58,7 @@ module ::DiscourseImageEnhancement
         .having('COUNT(uploads.id) <= ? AND COUNT(uploads.id) > 0', max_images_per_post)
         .select('posts.*')
       end
-      posts.distinct
+      posts
     end
 
     def self.uploads_need_analysis(
@@ -71,12 +71,13 @@ module ::DiscourseImageEnhancement
     end
 
     def self.image_search_data_need_remove
+      upload_table = Upload.arel_table
+      coalesce_sha1 = Arel::Nodes::NamedFunction.new('COALESCE', [upload_table[:original_sha1],upload_table[:sha1]])
       ImageSearchData.where.not(sha1:
         uploads_need_analysis(
             exclude_existing: false,
             max_retry_times: -1
-          ).joins("JOIN image_search_data ON image_search_data.sha1 = COALESCE(uploads.original_sha1, uploads.sha1)")
-          .select("image_search_data.sha1")
+          ).select(coalesce_sha1.as('coalesced_sha1'))
       )
     end
   end
