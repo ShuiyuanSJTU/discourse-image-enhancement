@@ -3,7 +3,7 @@ import { action } from "@ember/object";
 import { inject as service } from "@ember/service";
 import Topic from "discourse/models/topic";
 
-export default class extends Component{
+export default class extends Component {
   @service router;
   constructor() {
     super(...arguments);
@@ -14,12 +14,13 @@ export default class extends Component{
     const optimizedImages = this.args.resultEntry.optimized_images;
     if (optimizedImages) {
       let chosenOptimizedImage = optimizedImages.filter(
-        image => image.height > 300 && image.width > 150
+        (image) => image.height > 300 && image.width > 150
       );
       if (chosenOptimizedImage?.length > 0) {
-        chosenOptimizedImage = chosenOptimizedImage.reduce(
-          (prev, current) =>
-            (prev.height * prev.width < current.height * current.width) ? prev : current
+        chosenOptimizedImage = chosenOptimizedImage.reduce((prev, current) =>
+          prev.height * prev.width < current.height * current.width
+            ? prev
+            : current
         );
         return chosenOptimizedImage.url;
       }
@@ -29,8 +30,10 @@ export default class extends Component{
   get postContent() {
     let parser = new DOMParser();
     let doc = parser.parseFromString(this.post.cooked, "text/html");
-    doc.querySelectorAll('.lightbox-wrapper').forEach(wrapper => wrapper.remove());
-    doc.querySelectorAll('.onebox').forEach(onebox => onebox.remove());
+    doc
+      .querySelectorAll(".lightbox-wrapper")
+      .forEach((wrapper) => wrapper.remove());
+    doc.querySelectorAll(".onebox").forEach((onebox) => onebox.remove());
     let textContent = doc.body.textContent;
     if (this.post.post_number > 1) {
       textContent = `#${this.post.post_number} ${textContent}`;

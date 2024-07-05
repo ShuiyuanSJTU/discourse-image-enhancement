@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # # frozen_string_literal: true
 
 module ::DiscourseImageEnhancement
@@ -10,12 +11,16 @@ module ::DiscourseImageEnhancement
 
     def search
       term = params.require(:term)
-      ocr = params.fetch(:ocr, 'true') == 'true'
-      description = params.fetch(:description, 'true') == 'true'
+      ocr = params.fetch(:ocr, "true") == "true"
+      description = params.fetch(:description, "true") == "true"
       page = params.fetch(:page, 0).to_i
-      saerch_results = ImageSearch.new(term,
-        ocr: ocr, description: description,
-        page: page, guardian: Guardian.new(current_user)
+      saerch_results =
+        ImageSearch.new(
+          term,
+          ocr: ocr,
+          description: description,
+          page: page,
+          guardian: Guardian.new(current_user),
         ).execute
       render_serialized(saerch_results, ImageSearchResultSerializer)
     end

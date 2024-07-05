@@ -45,6 +45,6 @@ after_initialize do
     get "/image-search" => "image_enhancement#index"
     get "/image-search/search" => "image_enhancement#search"
   end
-  
+
   Discourse::Application.routes.append { mount ::DiscourseImageEnhancement::Engine, at: "/" }
 end

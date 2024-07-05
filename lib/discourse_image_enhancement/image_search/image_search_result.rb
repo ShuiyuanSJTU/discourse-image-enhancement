@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 class DiscourseImageEnhancement::ImageSearch
   class ImageSearchResultItem
     include ActiveModel::Serialization
@@ -19,29 +20,42 @@ class DiscourseImageEnhancement::ImageSearch
     attr_reader :search_ocr, :search_description, :term
 
     def grouped_results
-      @grouped_results ||= @posts.zip(@users, @topics, @images, @optimized_images).map do |post, user, topic, image, optimized_images|
-        ImageSearchResultItem.new(post, user, topic, image, optimized_images)
-      end
+      @grouped_results ||=
+        @posts
+          .zip(@users, @topics, @images, @optimized_images)
+          .map do |post, user, topic, image, optimized_images|
+            ImageSearchResultItem.new(post, user, topic, image, optimized_images)
+          end
     end
 
     def has_more
-      @has_more ||= begin
-        return false if @posts.length == 0
-        return false if @limit.present? && @posts.length < @limit
-        true
-      end
+      @has_more ||=
+        begin
+          return false if @posts.length == 0
+          return false if @limit.present? && @posts.length < @limit
+          true
+        end
     end
 
-    def initialize(result,
-        term: nil, search_ocr: true, search_description: true,
-        page: 0, limit: nil)
+    def initialize(
+      result,
+      term: nil,
+      search_ocr: true,
+      search_description: true,
+      page: 0,
+      limit: nil
+    )
       @term = term
       @search_ocr = search_ocr
       @search_description = search_description
       @page = page
       @limit = limit
 
-      result = result.select("posts.*,uploads.id as upload_id").includes(topic: [:tags, :category]).includes(:user)
+      result =
+        result
+          .select("posts.*,uploads.id as upload_id")
+          .includes(topic: %i[tags category])
+          .includes(:user)
       @posts = result
       @users = @posts.map(&:user)
       @topics = @posts.map(&:topic)

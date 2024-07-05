@@ -2,8 +2,18 @@
   <td class="img-search-img">
     <div class="img-thumbnail">
       <a href={{@resultEntry.link_target}}>
-        <img class="background-thumbnail" src="{{this.imageSrc}}" srcset="{{this.imageSrcSet}}" alt="{{@resultEntry.text}}" />
-        <img class="main-thumbnail" src="{{this.imageSrc}}" srcset="{{this.imageSrcSet}}" alt="{{@resultEntry.text}}" />
+        <img
+          class="background-thumbnail"
+          src={{this.imageSrc}}
+          srcset={{this.imageSrcSet}}
+          alt={{@resultEntry.text}}
+        />
+        <img
+          class="main-thumbnail"
+          src={{this.imageSrc}}
+          srcset={{this.imageSrcSet}}
+          alt={{@resultEntry.text}}
+        />
       </a>
     </div>
   </td>
@@ -13,12 +23,14 @@
     </span>
   </td>
   <td class="img-search-topic-title topic-list-data main-link">
-    <span class="link-top-line ">
-      <a href={{@resultEntry.link_target}}
-        class="title raw-link raw-topic-link" 
-        role='heading' aria-level="2"
+    <span class="link-top-line">
+      <a
+        href={{@resultEntry.link_target}}
+        class="title raw-link raw-topic-link"
+        role="heading"
+        aria-level="2"
         {{on "click" this.goToPath}}
-        >
+      >
         {{this.topic.fancy_title}}
       </a>
     </span>

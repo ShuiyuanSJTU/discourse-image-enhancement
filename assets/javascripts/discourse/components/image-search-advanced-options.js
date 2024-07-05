@@ -11,7 +11,7 @@ export default class ImageSearchAdvancedOptions extends SearchAdvancedOptions {
     this.setProperties({
       searchedTerms: {
         topic: null,
-      }
+      },
     });
   }
 
@@ -24,11 +24,14 @@ export default class ImageSearchAdvancedOptions extends SearchAdvancedOptions {
     const match = this.filterBlocks(REGEXP_TOPIC_PREFIX);
     if (match.length > 0) {
       const userInput = parseInt(match[0].replace(REGEXP_TOPIC_PREFIX, ""), 10);
-      if(!isNaN(userInput) && this.get("searchedTerms.topic")?.id !== userInput){
+      if (
+        !isNaN(userInput) &&
+        this.get("searchedTerms.topic")?.id !== userInput
+      ) {
         discourseDebounce(this, this._fetchTopic, [userInput], 200);
         this.set("searchedTerms.topic", {
           id: userInput,
-          title: `topic:${userInput}`
+          title: `topic:${userInput}`,
         });
       }
     }

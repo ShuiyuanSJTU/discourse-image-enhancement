@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require_relative "discourse_image_enhancement/image_analysis"
 require_relative "discourse_image_enhancement/image_search"
 require_relative "discourse_image_enhancement/filter"

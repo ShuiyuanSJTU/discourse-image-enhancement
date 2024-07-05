@@ -23,7 +23,7 @@ class ImageSearchResultItemSerializer < ApplicationSerializer
     {
       url: UrlHelper.cook_url(object.image.url, secure: object.image.secure),
       width: object.image.width,
-      height: object.image.height
+      height: object.image.height,
     }
   end
 
@@ -33,11 +33,11 @@ class ImageSearchResultItemSerializer < ApplicationSerializer
         # we cannot direct check if optimized_image is secured or not, so check the original image
         url: UrlHelper.cook_url(optimized_image.url, secure: object.image.secure),
         width: optimized_image.width,
-        height: optimized_image.height
+        height: optimized_image.height,
       }
     end
   end
-  
+
   def link_target
     object.post.url
   end

@@ -1,12 +1,9 @@
+# frozen_string_literal: true
 require_relative "image_search/image_search_result"
 
 module ::DiscourseImageEnhancement
   class ImageSearch
-    
-    def initialize(term, 
-        limit: 20, page: 0,
-        ocr: true, description: true, 
-        guardian: nil)
+    def initialize(term, limit: 20, page: 0, ocr: true, description: true, guardian: nil)
       @term = term
       @limit = limit
       @page = page
@@ -21,24 +18,22 @@ module ::DiscourseImageEnhancement
       return nil if term.blank? || (!@ocr && !@description)
       ts_config = Search.ts_config
       # user input will be quoted after to_tsquery, we can safely interpolate it
-      @safe_term_tsquery = Search.ts_query(term: Search.prepare_data(term, :query),ts_config: Search.ts_config)
+      @safe_term_tsquery =
+        Search.ts_query(term: Search.prepare_data(term, :query), ts_config: Search.ts_config)
 
-      images = Upload.joins("JOIN image_search_data ON COALESCE(uploads.original_sha1, uploads.sha1) = image_search_data.sha1")
+      images =
+        Upload.joins(
+          "JOIN image_search_data ON COALESCE(uploads.original_sha1, uploads.sha1) = image_search_data.sha1",
+        )
 
       conditions = []
       parameters = []
 
-      if @ocr
-        conditions << "ocr_text_search_data @@ #{@safe_term_tsquery}"
-      end
+      conditions << "ocr_text_search_data @@ #{@safe_term_tsquery}" if @ocr
 
-      if @description
-        conditions << "description_search_data @@ #{@safe_term_tsquery}"
-      end
+      conditions << "description_search_data @@ #{@safe_term_tsquery}" if @description
 
-      if conditions.any?
-        images = images.where(conditions.join(' OR '))
-      end
+      images = images.where(conditions.join(" OR ")) if conditions.any?
 
       images
     end
@@ -47,15 +42,23 @@ module ::DiscourseImageEnhancement
       if @ocr && @description
         posts = posts.order("posts.created_at": :desc)
       elsif @ocr
-        posts = posts.joins(:uploads)
-          .joins("JOIN image_search_data ON COALESCE(uploads.original_sha1, uploads.sha1) = image_search_data.sha1")
-          .order(<<-SQL.squish)
+        posts =
+          posts
+            .joins(:uploads)
+            .joins(
+              "JOIN image_search_data ON COALESCE(uploads.original_sha1, uploads.sha1) = image_search_data.sha1",
+            )
+            .order(<<-SQL.squish)
           (ts_rank_cd(ocr_text_search_data, #{@safe_term_tsquery}), posts.created_at) DESC
         SQL
       elsif @description
-        posts = posts.joins(:uploads)
-          .joins("JOIN image_search_data ON COALESCE(uploads.original_sha1, uploads.sha1) = image_search_data.sha1")
-          .order(<<-SQL.squish)
+        posts =
+          posts
+            .joins(:uploads)
+            .joins(
+              "JOIN image_search_data ON COALESCE(uploads.original_sha1, uploads.sha1) = image_search_data.sha1",
+            )
+            .order(<<-SQL.squish)
           (ts_rank_cd(description_search_data, #{@safe_term_tsquery}), posts.created_at) DESC
         SQL
       end
@@ -68,18 +71,18 @@ module ::DiscourseImageEnhancement
       posts = apply_advanced_filters(Post.visible.public_posts)
 
       search_reslut_images = search_images(term)
-      posts = posts.joins(:uploads).where(
-        uploads: { id: search_reslut_images }
-      )
+      posts = posts.joins(:uploads).where(uploads: { id: search_reslut_images })
       posts = posts.order("posts.id": :desc)
       posts = posts.offset(@page * @limit).limit(@limit)
 
-      ImageSearchResult.new(posts, 
-        term: @term, 
-        search_ocr: @ocr, 
-        search_description: @description, 
+      ImageSearchResult.new(
+        posts,
+        term: @term,
+        search_ocr: @ocr,
+        search_description: @description,
         page: @page,
-        limit: @limit)
+        limit: @limit,
+      )
     end
 
     def filter_post(posts)
@@ -93,7 +96,7 @@ module ::DiscourseImageEnhancement
     def self.advanced_filter(trigger, &block)
       advanced_filters[trigger] = block
     end
-  
+
     def self.advanced_filters
       @advanced_filters ||= {}
     end
@@ -105,9 +108,9 @@ module ::DiscourseImageEnhancement
         .to_a
         .map do |(word, _)|
           next if word.blank?
-  
+
           found = false
-  
+
           ImageSearch.advanced_filters.each do |matcher, block|
             cleaned = word.gsub(/["']/, "")
             if cleaned =~ matcher
@@ -133,9 +136,7 @@ module ::DiscourseImageEnhancement
       posts
     end
 
-    advanced_filter(/\Atopic:(\d+)\z/i) do |posts, match|
-      posts.where(topic_id: match.to_i)
-    end
+    advanced_filter(/\Atopic:(\d+)\z/i) { |posts, match| posts.where(topic_id: match.to_i) }
 
     advanced_filter(/\Abefore:(.*)\z/i) do |posts, match|
       if date = Search.word_to_date(match)
@@ -144,7 +145,7 @@ module ::DiscourseImageEnhancement
         posts
       end
     end
-  
+
     advanced_filter(/\Aafter:(.*)\z/i) do |posts, match|
       if date = Search.word_to_date(match)
         posts.where("posts.created_at > ?", date)
@@ -155,11 +156,11 @@ module ::DiscourseImageEnhancement
 
     advanced_filter(/\A\@(\S+)\z/i) do |posts, match|
       username = User.normalize_username(match)
-  
+
       user_id = User.not_staged.where(username_lower: username).pick(:id)
-  
+
       user_id = @guardian.user&.id if !user_id && username == "me"
-  
+
       if user_id
         posts.where("posts.user_id = ?", user_id)
       else
@@ -170,9 +171,7 @@ module ::DiscourseImageEnhancement
     advanced_filter(/\Atags:(\S+)\z/i) do |posts, match|
       tag_names = match.split(",")
       tags = Tag.where(name: tag_names)
-      posts.where(
-        id: Post.joins({ topic: :tags }).where(tags: { id: tags })
-      )
+      posts.where(id: Post.joins({ topic: :tags }).where(tags: { id: tags }))
     end
 
     advanced_filter(/\A\#([\p{L}\p{M}0-9\-:=]+)\z/i) do |posts, match|
@@ -206,8 +205,7 @@ module ::DiscourseImageEnhancement
         category_ids = [category_id]
         category_ids += Category.subcategory_ids(category_id) if !exact
 
-        posts.joins(:topic)
-          .where({ topics: { category_id: category_ids } })
+        posts.joins(:topic).where({ topics: { category_id: category_ids } })
       else
         posts.none
       end
