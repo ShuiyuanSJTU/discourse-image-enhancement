@@ -46,6 +46,7 @@ module ::DiscourseImageEnhancement
         rejected_upload_sha1s = failed_count.select { |_, v| v > max_retry_times }.keys
         uploads = uploads.where('NOT COALESCE(uploads.original_sha1, uploads.sha1) IN (?)', rejected_upload_sha1s) if rejected_upload_sha1s.present?
       end
+      uploads = uploads.not(id: CustomEmoji.pluck(:upload_id))
       uploads
     end
 
