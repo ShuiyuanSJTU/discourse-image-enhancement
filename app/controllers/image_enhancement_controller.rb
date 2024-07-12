@@ -5,7 +5,7 @@ class ImageEnhancementController < ::ApplicationController
   requires_plugin ::DiscourseImageEnhancement::PLUGIN_NAME
 
   def index
-    render json: { hello: "world" }
+    render json: {}
   end
 
   def search
@@ -14,7 +14,7 @@ class ImageEnhancementController < ::ApplicationController
     description = params.fetch(:description, "true") == "true"
     page = params.fetch(:page, 0).to_i
     saerch_results =
-      ImageSearch.new(
+      ::DiscourseImageEnhancement::ImageSearch.new(
         term,
         ocr: ocr,
         description: description,
