@@ -36,7 +36,7 @@ describe ::Jobs::PostImageEnhanceProcess do
   end
 end
 
-describe ::Jobs::DiscourseImageEnhancement::AutoBackfill do
+describe ::Jobs::ImageSearchAutoBackfill do
   before do
     SiteSetting.image_enhancement_enabled = true
     SiteSetting.image_search_enabled = true
@@ -59,7 +59,7 @@ describe ::Jobs::DiscourseImageEnhancement::AutoBackfill do
   end
 end
 
-describe ::Jobs::DiscourseImageEnhancement::AutoCleanup do
+describe ::Jobs::ImageSearchAutoCleanup do
   before do
     SiteSetting.image_enhancement_enabled = true
     SiteSetting.image_search_enabled = true
