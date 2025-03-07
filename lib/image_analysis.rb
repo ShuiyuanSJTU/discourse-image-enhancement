@@ -123,7 +123,7 @@ module ::DiscourseImageEnhancement
     def self.check_for_flag(post)
       return unless SiteSetting.image_enhancement_auto_flag_ocr
       ocr_text = ImageSearchData.find_by_post(post).pluck(:ocr_text).join("\n")
-      if ocr_text.present? WordWatcher.new(ocr_text).should_flag?
+      if ocr_text.present? && WordWatcher.new(ocr_text).should_flag?
         PostActionCreator.create(Discourse.system_user, post, :inappropriate, reason: :watched_word)
       end
     end
