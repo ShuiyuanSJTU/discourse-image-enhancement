@@ -1,6 +1,6 @@
 import Component from "@glimmer/component";
 import { action } from "@ember/object";
-import { inject as service } from "@ember/service";
+import { service } from "@ember/service";
 import Topic from "discourse/models/topic";
 
 export default class extends Component {
@@ -10,6 +10,7 @@ export default class extends Component {
     this.topic = Topic.create(this.args.resultEntry.topic);
     this.post = this.args.resultEntry.post;
   }
+
   get imageSrc() {
     const optimizedImages = this.args.resultEntry.optimized_images;
     if (optimizedImages) {
@@ -27,6 +28,7 @@ export default class extends Component {
     }
     return this.args.resultEntry.image.url;
   }
+
   get postContent() {
     let parser = new DOMParser();
     let doc = parser.parseFromString(this.post.cooked, "text/html");

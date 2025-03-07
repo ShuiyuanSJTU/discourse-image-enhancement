@@ -2,8 +2,8 @@ import Controller from "@ember/controller";
 import { action } from "@ember/object";
 import { observes } from "@ember-decorators/object";
 import { ajax } from "discourse/lib/ajax";
-import discourseComputed from "discourse-common/utils/decorators";
-import I18n from "discourse-i18n";
+import discourseComputed from "discourse/lib/decorators";
+import { i18n } from "discourse-i18n";
 
 export default class extends Controller {
   searching = false;
@@ -22,15 +22,15 @@ export default class extends Controller {
 
   searchTypes = [
     {
-      name: I18n.t("image_search.search_type.ocr_and_desc"),
+      name: i18n("image_search.search_type.ocr_and_desc"),
       id: "image_search_ocr_and_description",
     },
     {
-      name: I18n.t("image_search.search_type.ocr_only"),
+      name: i18n("image_search.search_type.ocr_only"),
       id: "image_search_ocr",
     },
     {
-      name: I18n.t("image_search.search_type.desc_only"),
+      name: i18n("image_search.search_type.desc_only"),
       id: "image_search_description",
     },
   ];

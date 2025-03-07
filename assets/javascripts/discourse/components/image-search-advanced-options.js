@@ -1,7 +1,7 @@
 import { action } from "@ember/object";
 import SearchAdvancedOptions from "discourse/components/search-advanced-options";
+import discourseDebounce from "discourse/lib/debounce";
 import Topic from "discourse/models/topic";
-import discourseDebounce from "discourse-common/lib/debounce";
 
 const REGEXP_TOPIC_PREFIX = /^topic:/gi;
 

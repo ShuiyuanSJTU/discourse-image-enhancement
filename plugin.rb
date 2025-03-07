@@ -13,7 +13,7 @@ enabled_site_setting :image_enhancement_enabled
 register_asset "stylesheets/common/discourse-image-enhancement.scss"
 
 module ::DiscourseImageEnhancement
-  PLUGIN_NAME ||= "discourse-image-enhancement".freeze
+  PLUGIN_NAME = "discourse-image-enhancement".freeze
 end
 
 Rails.autoloaders.main.push_dir(File.join(__dir__, "lib"), namespace: ::DiscourseImageEnhancement)
