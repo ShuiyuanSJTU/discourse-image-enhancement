@@ -38,3 +38,7 @@ plugins:
   image_enhancement_max_retry_times_per_image:
     default: 3
     client: false
+  image_enhancement_analyze_ocr_enabled:
+    default: false
+  image_enhancement_analyze_description_enabled:
+    default: false

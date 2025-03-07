@@ -3,7 +3,10 @@
 require "rails_helper"
 
 describe DiscourseImageEnhancement::ImageAnalysis do
-  before(:example) {}
+  before(:example) {
+    SiteSetting.image_enhancement_analyze_ocr_enabled = true
+    SiteSetting.image_enhancement_analyze_description_enabled = true
+  }
 
   describe "save search data" do
     it "can save data in english" do

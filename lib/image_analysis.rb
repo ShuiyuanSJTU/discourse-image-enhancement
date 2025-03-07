@@ -48,12 +48,26 @@ module ::DiscourseImageEnhancement
     end
 
     def self.save_analyzed_image_data(image)
+      if SiteSetting.image_enhancement_analyze_ocr_enabled
+        ocr_text = image["ocr_result"].join("\n")
+        ocr_text_search_data = Search.prepare_data(ocr_text, :index)
+      else
+        ocr_text = nil
+        ocr_text_search_data = nil
+      end
+      if SiteSetting.image_enhancement_analyze_description_enabled
+        description = image["description"]
+        description_search_data = Search.prepare_data(description, :index)
+      else
+        description = nil
+        description_search_data = nil
+      end
       params = {
         sha1: image["sha1"],
-        ocr_text: image["ocr_result"].join("\n"),
-        description: image["description"],
-        ocr_text_search_data: Search.prepare_data(image["ocr_result"].join("\n"), :index),
-        description_search_data: Search.prepare_data(image["description"], :index),
+        ocr_text: ocr_text,
+        description: description,
+        ocr_text_search_data: ocr_text_search_data,
+        description_search_data: description_search_data,
         ts_config: Search.ts_config,
       }
       DB.exec(<<~SQL, params)
@@ -88,6 +102,8 @@ module ::DiscourseImageEnhancement
     def self.build_query_body(images)
       body = {}
       body[:images] = images
+      body[:ocr] = SiteSetting.image_enhancement_analyze_ocr_enabled
+      body[:description] = SiteSetting.image_enhancement_analyze_description_enabled
       MultiJson.dump(body)
     end
 
@@ -107,7 +123,7 @@ module ::DiscourseImageEnhancement
     def self.check_for_flag(post)
       return unless SiteSetting.image_enhancement_auto_flag_ocr
       ocr_text = ImageSearchData.find_by_post(post).pluck(:ocr_text).join("\n")
-      if WordWatcher.new(ocr_text).should_flag?
+      if ocr_text.present? WordWatcher.new(ocr_text).should_flag?
         PostActionCreator.create(Discourse.system_user, post, :inappropriate, reason: :watched_word)
       end
     end
