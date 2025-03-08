@@ -56,7 +56,7 @@ module ::DiscourseImageEnhancement
             "NOT EXISTS (
             SELECT 1
             FROM image_search_data
-            WHERE image_search_data.sha1 = COALESCE(uploads.original_sha1, uploads.sha1)
+            WHERE image_search_data.upload_id = uploads.id
           )",
           )
       end
@@ -105,17 +105,8 @@ module ::DiscourseImageEnhancement
     end
 
     def self.image_search_data_need_remove
-      upload_table = Upload.arel_table
-      coalesce_sha1 =
-        Arel::Nodes::NamedFunction.new(
-          "COALESCE",
-          [upload_table[:original_sha1], upload_table[:sha1]],
-        )
       ImageSearchData.where.not(
-        sha1:
-          uploads_need_analysis(exclude_existing: false, max_retry_times: -1).select(
-            coalesce_sha1.as("coalesced_sha1"),
-          ),
+        upload_id: uploads_need_analysis(exclude_existing: false, max_retry_times: -1),
       )
     end
   end

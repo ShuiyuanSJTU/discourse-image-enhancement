@@ -21,6 +21,8 @@ Rails.autoloaders.main.push_dir(File.join(__dir__, "lib"), namespace: ::Discours
 require_relative "lib/engine"
 
 after_initialize do
+  ::Upload.has_one :image_search_data
+
   module ::DiscourseImageEnhancement
     module OverridePullHotlinkedImages
       def execute(args)

@@ -67,8 +67,10 @@ describe ::Jobs::ImageSearchAutoCleanup do
     SiteSetting.image_enhancement_max_retry_times_per_image = 3
   end
 
-  let(:image_search_data) { ImageSearchData.create(sha1: "1234") }
-  let(:image_upload) { Fabricate(:upload, sha1: image_search_data.sha1) }
+  let(:image_upload) { Fabricate(:upload, sha1: "1234") }
+  let!(:image_search_data) do
+    ImageSearchData.create(sha1: image_upload.sha1, upload_id: image_upload.id)
+  end
   let(:post) { Fabricate(:post, uploads: [image_upload]) }
 
   it "should not cleanup image_search_data" do

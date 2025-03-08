@@ -81,7 +81,7 @@ describe DiscourseImageEnhancement::Filter do
     it "can exclude existing uploads" do
       image_upload1.update!(original_sha1: "1234")
       image_upload2.update!(original_sha1: "5678")
-      ImageSearchData.create(sha1: "1234")
+      ImageSearchData.create(sha1: "1234", upload_id: image_upload1.id)
       uploads =
         DiscourseImageEnhancement::Filter.filter_upload(
           Upload.where(id: [image_upload1.id, image_upload2.id]),
@@ -120,8 +120,12 @@ describe DiscourseImageEnhancement::Filter do
     let(:image_upload1) { Fabricate(:upload) }
     let(:image_upload2) { Fabricate(:upload) }
     let!(:post) { Fabricate(:post, uploads: [image_upload1, image_upload2]) }
-    let!(:image_search_data1) { ImageSearchData.create(sha1: image_upload1.sha1) }
-    let!(:image_search_data2) { ImageSearchData.create(sha1: image_upload2.sha1) }
+    let!(:image_search_data1) do
+      ImageSearchData.create(sha1: image_upload1.sha1, upload_id: image_upload1.id)
+    end
+    let!(:image_search_data2) do
+      ImageSearchData.create(sha1: image_upload2.sha1, upload_id: image_upload2.id)
+    end
 
     it "should not remove normal data" do
       expect(ImageSearchData.count).to eq(2)
@@ -130,9 +134,8 @@ describe DiscourseImageEnhancement::Filter do
 
     it "should remove data without uploads" do
       image_upload2.destroy
-      expect(DiscourseImageEnhancement::Filter.image_search_data_need_remove).to match_array(
-        [image_search_data2],
-      )
+      expect(DiscourseImageEnhancement::Filter.image_search_data_need_remove).to match_array([])
+      expect(ImageSearchData.find_by(upload_id: image_upload2.id)).to be_nil
     end
 
     it "should remove data without posts" do
@@ -189,9 +192,9 @@ describe DiscourseImageEnhancement::Filter do
     end
 
     it "should exclude existing" do
-      ImageSearchData.create(sha1: image_upload1.sha1)
+      ImageSearchData.create(sha1: image_upload1.sha1, upload_id: image_upload1.id)
       expect(DiscourseImageEnhancement::Filter.posts_need_analysis).to match_array([post])
-      ImageSearchData.create(sha1: image_upload2.sha1)
+      ImageSearchData.create(sha1: image_upload2.sha1, upload_id: image_upload2.id)
       expect(DiscourseImageEnhancement::Filter.posts_need_analysis).to match_array([])
       expect(
         DiscourseImageEnhancement::Filter.posts_need_analysis(exclude_existing: false),

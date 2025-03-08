@@ -8,6 +8,8 @@ describe DiscourseImageEnhancement::ImageAnalysis do
     SiteSetting.image_enhancement_analyze_description_enabled = true
   end
 
+  let(:image_upload) { Fabricate(:upload, sha1: "1234") }
+
   describe "save search data" do
     it "can save data in english" do
       SiteSetting.default_locale = "en"
@@ -17,7 +19,7 @@ describe DiscourseImageEnhancement::ImageAnalysis do
         "description" => "a flying car",
         "success" => true,
       }
-      DiscourseImageEnhancement::ImageAnalysis.save_analyzed_image_data(image)
+      DiscourseImageEnhancement::ImageAnalysis.save_analyzed_image_data(image, image_upload)
       expect(ImageSearchData.find_by(sha1: "1234").ocr_text).to eq("a car\na man")
       expect(ImageSearchData.find_by(sha1: "1234").description_search_data).to eq("'car':3 'fli':2")
     end
@@ -30,7 +32,7 @@ describe DiscourseImageEnhancement::ImageAnalysis do
         "description" => "一辆飞行的汽车",
         "success" => true,
       }
-      DiscourseImageEnhancement::ImageAnalysis.save_analyzed_image_data(image)
+      DiscourseImageEnhancement::ImageAnalysis.save_analyzed_image_data(image, image_upload)
       expect(ImageSearchData.find_by(sha1: "1234").ocr_text).to eq("一辆车\n天空")
       expect(ImageSearchData.find_by(sha1: "1234").description_search_data).to be_present
     end
@@ -72,7 +74,7 @@ describe DiscourseImageEnhancement::ImageAnalysis do
       }
       post = Fabricate(:post, raw: "![image1](#{image_upload.short_url})", uploads: [image_upload])
       result["images"].each do |image|
-        DiscourseImageEnhancement::ImageAnalysis.save_analyzed_image_data(image)
+        DiscourseImageEnhancement::ImageAnalysis.save_analyzed_image_data(image, image_upload)
       end
 
       PostActionCreator.expects(:create).once

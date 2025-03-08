@@ -21,10 +21,7 @@ module ::DiscourseImageEnhancement
       @safe_term_tsquery =
         Search.ts_query(term: Search.prepare_data(term, :query), ts_config: Search.ts_config)
 
-      images =
-        Upload.joins(
-          "JOIN image_search_data ON COALESCE(uploads.original_sha1, uploads.sha1) = image_search_data.sha1",
-        )
+      images = Upload.joins(:image_search_data)
 
       conditions = []
       parameters = []
@@ -42,23 +39,11 @@ module ::DiscourseImageEnhancement
       if @ocr && @description
         posts = posts.order("posts.created_at": :desc)
       elsif @ocr
-        posts =
-          posts
-            .joins(:uploads)
-            .joins(
-              "JOIN image_search_data ON COALESCE(uploads.original_sha1, uploads.sha1) = image_search_data.sha1",
-            )
-            .order(<<-SQL.squish)
+        posts = posts.joins(:uploads).joins(:image_search_data).order(<<-SQL.squish)
           (ts_rank_cd(ocr_text_search_data, #{@safe_term_tsquery}), posts.created_at) DESC
         SQL
       elsif @description
-        posts =
-          posts
-            .joins(:uploads)
-            .joins(
-              "JOIN image_search_data ON COALESCE(uploads.original_sha1, uploads.sha1) = image_search_data.sha1",
-            )
-            .order(<<-SQL.squish)
+        posts = posts.joins(:uploads).joins(:image_search_data).order(<<-SQL.squish)
           (ts_rank_cd(description_search_data, #{@safe_term_tsquery}), posts.created_at) DESC
         SQL
       end
