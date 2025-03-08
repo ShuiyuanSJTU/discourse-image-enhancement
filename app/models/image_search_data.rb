@@ -18,10 +18,16 @@ end
 #  description             :text
 #  ocr_text_search_data    :tsvector
 #  description_search_data :tsvector
+#  upload_id               :integer          not null
 #
 # Indexes
 #
 #  index_image_search_data_on_description_search_data  (description_search_data) USING gin
 #  index_image_search_data_on_ocr_text_search_data     (ocr_text_search_data) USING gin
-#  index_image_search_data_on_sha1                     (sha1) UNIQUE
+#  index_image_search_data_on_sha1                     (sha1)
+#  index_image_search_data_on_upload_id                (upload_id) UNIQUE
+#
+# Foreign Keys
+#
+#  fk_rails_...  (upload_id => uploads.id) ON DELETE => cascade
 #
