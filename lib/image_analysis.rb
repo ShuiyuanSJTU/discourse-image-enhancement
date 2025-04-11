@@ -64,6 +64,7 @@ module ::DiscourseImageEnhancement
         description = nil
         description_search_data = nil
       end
+      return if ocr_text.nil? && description.nil?
       params = {
         upload_id: upload.id,
         sha1: image["sha1"],
