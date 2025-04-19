@@ -3,51 +3,27 @@ require_relative "image_search/image_search_result"
 
 module ::DiscourseImageEnhancement
   class ImageSearch
-    def initialize(term, limit: 20, page: 0, ocr: true, description: true, guardian: nil)
+    def initialize(term, limit: 20, page: 0, ocr: true, description: true, embeddings: true, guardian: nil)
       @term = term
       @limit = limit
       @page = page
       @ocr = ocr
       @description = description
+      @embeddings = embeddings
       @has_more = true
       @guardian = guardian || Guardian.new
     end
 
-    def search_images(term = nil)
+    def search_images_ocr(term = nil)
       term ||= @term
-      return nil if term.blank? || (!@ocr && !@description)
-      ts_config = Search.ts_config
+      return nil if term.blank? || !@ocr
       # user input will be quoted after to_tsquery, we can safely interpolate it
       @safe_term_tsquery =
         Search.ts_query(term: Search.prepare_data(term, :query), ts_config: Search.ts_config)
 
       images = Upload.joins(:image_search_data)
 
-      conditions = []
-      parameters = []
-
-      conditions << "ocr_text_search_data @@ #{@safe_term_tsquery}" if @ocr
-
-      conditions << "description_search_data @@ #{@safe_term_tsquery}" if @description
-
-      images = images.where(conditions.join(" OR ")) if conditions.any?
-
-      images
-    end
-
-    def order_result(posts)
-      if @ocr && @description
-        posts = posts.order("posts.created_at": :desc)
-      elsif @ocr
-        posts = posts.joins(:uploads).joins(:image_search_data).order(<<-SQL.squish)
-          (ts_rank_cd(ocr_text_search_data, #{@safe_term_tsquery}), posts.created_at) DESC
-        SQL
-      elsif @description
-        posts = posts.joins(:uploads).joins(:image_search_data).order(<<-SQL.squish)
-          (ts_rank_cd(description_search_data, #{@safe_term_tsquery}), posts.created_at) DESC
-        SQL
-      end
-      posts
+      images.where("ocr_text_search_data @@ #{@safe_term_tsquery}")
     end
 
     def execute
@@ -55,8 +31,8 @@ module ::DiscourseImageEnhancement
 
       posts = apply_advanced_filters(Post.visible.public_posts)
 
-      search_reslut_images = search_images(term)
-      posts = posts.joins(:uploads).where(uploads: { id: search_reslut_images })
+      search_result_images = search_images(term)
+      posts = posts.joins(:uploads).where(uploads: { id: search_result_images })
       posts = posts.order("posts.id": :desc)
       posts = posts.offset(@page * @limit).limit(@limit)
 

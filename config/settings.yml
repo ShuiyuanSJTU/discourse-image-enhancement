@@ -40,5 +40,13 @@ plugins:
     client: false
   image_enhancement_analyze_ocr_enabled:
     default: false
+    client: false
   image_enhancement_analyze_description_enabled:
     default: false
+    client: false
+  image_enhancement_analyze_embedding_enabled:
+    default: false
+    client: false
+  image_enhancement_embedding_similarity_threshold:
+    default: 0.4
+    client: false

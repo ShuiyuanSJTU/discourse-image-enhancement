@@ -1,11 +1,15 @@
 # frozen_string_literal: true
 module ::DiscourseImageEnhancement
   class ImageAnalysis
-    def self.process_post(post, record_failed: true)
-      return nil unless should_analyze_post(post)
-      image_info = extract_images(post)
-      return nil if image_info.blank?
-      return nil if image_info.length > SiteSetting.image_enhancement_max_images_per_post
+    def initialize(record_failed: nil, analyze_ocr: nil, analyze_description: nil, analyze_embedding: nil, auto_flag_ocr: nil)
+      @record_failed = record_failed.nil? ? SiteSetting.image_enhancement_record_failed : record_failed
+      @analyze_ocr = analyze_ocr.nil? ? SiteSetting.image_enhancement_analyze_ocr : analyze_ocr
+      @analyze_description = analyze_description.nil? ? SiteSetting.image_enhancement_analyze_description : analyze_description
+      @analyze_embedding = analyze_embedding.nil? ? SiteSetting.image_enhancement_analyze_embedding : analyze_embedding
+      @auto_flag_ocr = auto_flag_ocr.nil? ? SiteSetting.image_enhancement_auto_flag_ocr : auto_flag_ocr
+    end
+
+    def analyze_images(image_info)
       body = build_query_body(image_info)
       uri = URI.parse(SiteSetting.image_enhancement_analyze_service_endpoint)
       headers = build_query_headers(uri, body)
@@ -15,28 +19,28 @@ module ::DiscourseImageEnhancement
       begin
         response = connection.post(uri, body, headers)
       rescue => e
-        Rails.logger.warn("Failed to analyze images for post #{post.id}: #{e.message}")
+        Rails.logger.warn("Failed to analyze images: #{e.message}")
         return nil
       end
 
       if response.status != 200
         Rails.logger.warn(
-          "Failed to analyze images for post #{post.id}, #{response.status}: #{response.body}",
+          "Failed to analyze images #{response.status}: #{response.body}",
         )
         return nil
       end
 
       sha1_to_upload_id = image_info.map { |i| [i[:sha1], i[:id]] }.to_h
-      result = MultiJson.load(response.body)
-      result["images"].each do |image|
-        next unless image["success"]
-        upload_id = sha1_to_upload_id[image["sha1"]]
+      result = JSON.parse(response.body, symbolize_names: true)
+      result[:images].each do |image_result|
+        next unless image_result[:success]
+        upload_id = sha1_to_upload_id[image_result[:sha1]]
         next if upload_id.blank?
-        save_analyzed_image_data(image, Upload.find_by(id: upload_id))
+        save_analyzed_image_data(image_result, Upload.find_by(id: upload_id))
       end
 
-      if record_failed
-        success_sha1s = result["images"].select { |i| i["success"] }.map { |i| i["sha1"] }
+      if @record_failed
+        success_sha1s = result[:images].select { |i| i[:success] }.map { |i| i[:sha1] }
         failed_sha1s = image_info.map { |i| i[:sha1] } - success_sha1s
         if failed_sha1s.present?
           failed_count = PluginStore.get(PLUGIN_NAME, "failed_count") || {}
@@ -48,54 +52,86 @@ module ::DiscourseImageEnhancement
       result
     end
 
-    def self.save_analyzed_image_data(image, upload)
+    def process_post(post)
+      return nil unless should_analyze_post(post)
+      image_info = extract_images(post.uploads)
+      return nil if image_info.blank?
+      return nil if image_info.length > SiteSetting.image_enhancement_max_images_per_post
+      analyze_images(image_info)
+    end
+
+    def process_image(upload)
+      return nil if upload.blank?
+      image_info = extract_images(Upload.where(id: upload.id))
+      return nil if image_info.blank?
+      existing_search_data = ImageSearchData.find_by(upload_id: upload.id)
+      if existing_search_data.present?
+        @analyze_ocr = false if existing_search_data.ocr_text.present?
+        @analyze_description = false if existing_search_data.description.present?
+        @analyze_embedding = false if existing_search_data.embedding.present?
+      end
+      analyze_images(image_info)
+    end
+
+    def save_analyzed_image_data(image_result, upload)
       return if ImageSearchData.find_by(upload_id: upload.id).present?
-      if SiteSetting.image_enhancement_analyze_ocr_enabled
-        ocr_text = image["ocr_result"].join("\n")
+      if @analyze_ocr
+        ocr_text = image_result[:ocr_result].join("\n")
         ocr_text_search_data = Search.prepare_data(ocr_text, :index)
       else
         ocr_text = nil
         ocr_text_search_data = nil
       end
-      if SiteSetting.image_enhancement_analyze_description_enabled
-        description = image["description"]
+      if @analyze_description
+        description = image_result[:description]
         description_search_data = Search.prepare_data(description, :index)
       else
         description = nil
         description_search_data = nil
       end
+      if @analyze_embedding
+        embedding = image_result[:embedding]
+      else
+        embedding = nil
+      end
       return if ocr_text.nil? && description.nil?
       params = {
         upload_id: upload.id,
-        sha1: image["sha1"],
+        sha1: image_result[:sha1],
         ocr_text: ocr_text,
         description: description,
         ocr_text_search_data: ocr_text_search_data,
         description_search_data: description_search_data,
         ts_config: Search.ts_config,
+        embedding: embedding,
       }
       DB.exec(<<~SQL, params)
-        INSERT INTO image_search_data (upload_id, sha1, ocr_text, description, ocr_text_search_data, description_search_data)
-        VALUES (:upload_id, :sha1, :ocr_text, :description, to_tsvector(:ts_config, :ocr_text_search_data), to_tsvector(:ts_config, :description_search_data))
-        ON CONFLICT (upload_id) DO NOTHING
+        INSERT INTO image_search_data (upload_id, sha1, ocr_text, description, ocr_text_search_data, description_search_data, embeddings)
+        VALUES (:upload_id, :sha1, :ocr_text, :description, to_tsvector(:ts_config, :ocr_text_search_data), to_tsvector(:ts_config, :description_search_data), :embedding)
+        ON CONFLICT (upload_id) DO UPDATE SET
+          ocr_text = COALESCE(EXCLUDED.ocr_text, image_search_data.ocr_text),
+          description = COALESCE(EXCLUDED.description, image_search_data.description),
+          ocr_text_search_data = COALESCE(EXCLUDED.ocr_text_search_data, image_search_data.ocr_text_search_data),
+          description_search_data = COALESCE(EXCLUDED.description_search_data, image_search_data.description_search_data),
+          embeddings = COALESCE(EXCLUDED.embeddings, image_search_data.embeddings)
       SQL
     end
 
-    def self.should_analyze_image(upload)
+    def should_analyze_image(upload)
       return false if upload.blank?
       return true if Filter.filter_upload(Upload.where(id: upload), max_retry_times: -1).count > 0
       true
     end
 
-    def self.should_analyze_post(post)
+    def should_analyze_post(post)
       return false if post.blank? || post.id.blank?
       return true if Filter.filter_post(Post.where(id: post)).count > 0
       false
     end
 
-    def self.extract_images(post)
+    def extract_images(uploads)
       Filter
-        .filter_upload(post.uploads)
+        .filter_upload(uploads)
         .map do |u|
           url = UrlHelper.cook_url(u.url, secure: u.secure)
           url = Upload.signed_url_from_secure_uploads_url(url) if Upload.secure_uploads_url?(url)
@@ -103,15 +139,15 @@ module ::DiscourseImageEnhancement
         end
     end
 
-    def self.build_query_body(images)
+    def build_query_body(images)
       body = {}
       body[:images] = images
-      body[:ocr] = SiteSetting.image_enhancement_analyze_ocr_enabled
-      body[:description] = SiteSetting.image_enhancement_analyze_description_enabled
+      body[:ocr] = @analyze_ocr
+      body[:embedding] = @analyze_embedding
       MultiJson.dump(body)
     end
 
-    def self.build_query_headers(uri, query_body)
+    def build_query_headers(uri, query_body)
       {
         "Accept" => "*/*",
         "Connection" => "close",
@@ -124,8 +160,8 @@ module ::DiscourseImageEnhancement
       }
     end
 
-    def self.check_for_flag(post)
-      return unless SiteSetting.image_enhancement_auto_flag_ocr
+    def check_for_flag(post)
+      return unless @auto_flag_ocr
       ocr_text = ImageSearchData.find_by_post(post).pluck(:ocr_text).join("\n")
       if ocr_text.present? && WordWatcher.new(ocr_text).should_flag?
         PostActionCreator.create(Discourse.system_user, post, :inappropriate, reason: :watched_word)
