@@ -39,12 +39,9 @@ module ::DiscourseImageEnhancement
       posts
     end
 
-    def self.filter_upload(
-      uploads,
-      exclude_existing: true,
-      max_retry_times: nil
-    )
-      max_retry_times = SiteSetting.image_enhancement_max_retry_times_per_image if max_retry_times.nil?
+    def self.filter_upload(uploads, exclude_existing: true, max_retry_times: nil)
+      max_retry_times =
+        SiteSetting.image_enhancement_max_retry_times_per_image if max_retry_times.nil?
       uploads =
         uploads
           .where("filesize <= ?", SiteSetting.image_enhancement_max_image_size_kb.kilobytes)

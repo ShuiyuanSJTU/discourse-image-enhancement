@@ -2,7 +2,15 @@
 
 module ::DiscourseImageEnhancement
   class ImageSearch
-    def initialize(term, limit: 20, page: 0, ocr: true, description: true, embeddings: true, guardian: nil)
+    def initialize(
+      term,
+      limit: 20,
+      page: 0,
+      ocr: true,
+      description: true,
+      embeddings: true,
+      guardian: nil
+    )
       @term = term
       @limit = limit
       @page = page
@@ -50,13 +58,13 @@ module ::DiscourseImageEnhancement
       posts
     end
 
-    def search_images_embedding(term=nil, limit:, offset:)
+    def search_images_embedding(term = nil, limit:, offset:)
       term = @processed_term if term.nil?
 
       embedding = TextEmbedding.embed_text(term)
 
       before_query = self.class.hnsw_search_workaround(limit)
-      
+
       builder = DB.build(<<~SQL)
         WITH candidates AS (
           SELECT
@@ -94,29 +102,44 @@ module ::DiscourseImageEnhancement
 
     def execute
       # results is an array of [post_id, upload_id]
-      results = begin
-        if @embeddings && @ocr
-          limit = (@limit / 2).to_i
-          res_embedding = search_posts_embedding(limit: limit, offset: @page * limit).pluck("posts.id","uploads.id")
-          res_ocr = search_posts_ocr(limit: limit, offset: @page * limit).pluck("posts.id","uploads.id")
-          @has_more = res_embedding.length >= limit || res_ocr.length >= limit
-          res_embedding + res_ocr
-        elsif @ocr
-          res = search_posts_ocr(limit: @limit, offset: @page * @limit).pluck("posts.id","uploads.id")
-          @has_more = res.length >= @limit
-          res
-        elsif @embeddings
-          res = search_posts_embedding(limit: @limit, offset: @page * @limit).pluck("posts.id","uploads.id")
-          @has_more = res.length >= @limit
-          res
-        else
-          nil
+      results =
+        begin
+          if @embeddings && @ocr
+            limit = (@limit / 2).to_i
+            res_embedding =
+              search_posts_embedding(limit: limit, offset: @page * limit).pluck(
+                "posts.id",
+                "uploads.id",
+              )
+            res_ocr =
+              search_posts_ocr(limit: limit, offset: @page * limit).pluck("posts.id", "uploads.id")
+            @has_more = res_embedding.length >= limit || res_ocr.length >= limit
+            res_embedding + res_ocr
+          elsif @ocr
+            res =
+              search_posts_ocr(limit: @limit, offset: @page * @limit).pluck(
+                "posts.id",
+                "uploads.id",
+              )
+            @has_more = res.length >= @limit
+            res
+          elsif @embeddings
+            res =
+              search_posts_embedding(limit: @limit, offset: @page * @limit).pluck(
+                "posts.id",
+                "uploads.id",
+              )
+            @has_more = res.length >= @limit
+            res
+          else
+            nil
+          end
         end
-      end
-      
+
       posts_id, uploads_id = results.uniq.transpose
       ImageSearchResult.new(
-        posts_id, uploads_id,
+        posts_id,
+        uploads_id,
         term: @term,
         search_ocr: @ocr,
         search_description: @description,

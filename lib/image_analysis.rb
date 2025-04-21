@@ -1,12 +1,34 @@
 # frozen_string_literal: true
 module ::DiscourseImageEnhancement
   class ImageAnalysis
-    def initialize(record_failed: true, analyze_ocr: nil, analyze_description: nil, analyze_embedding: nil, auto_flag_ocr: nil)
+    def initialize(
+      record_failed: true,
+      analyze_ocr: nil,
+      analyze_description: nil,
+      analyze_embedding: nil,
+      auto_flag_ocr: nil
+    )
       @record_failed = record_failed
-      @analyze_ocr = analyze_ocr.nil? ? SiteSetting.image_enhancement_analyze_ocr_enabled : analyze_ocr
-      @analyze_description = analyze_description.nil? ? SiteSetting.image_enhancement_analyze_description_enabled : analyze_description
-      @analyze_embedding = analyze_embedding.nil? ? SiteSetting.image_enhancement_analyze_embedding_enabled : analyze_embedding
-      @auto_flag_ocr = auto_flag_ocr.nil? ? SiteSetting.image_enhancement_auto_flag_ocr : auto_flag_ocr
+      @analyze_ocr =
+        analyze_ocr.nil? ? SiteSetting.image_enhancement_analyze_ocr_enabled : analyze_ocr
+      @analyze_description =
+        (
+          if analyze_description.nil?
+            SiteSetting.image_enhancement_analyze_description_enabled
+          else
+            analyze_description
+          end
+        )
+      @analyze_embedding =
+        (
+          if analyze_embedding.nil?
+            SiteSetting.image_enhancement_analyze_embedding_enabled
+          else
+            analyze_embedding
+          end
+        )
+      @auto_flag_ocr =
+        auto_flag_ocr.nil? ? SiteSetting.image_enhancement_auto_flag_ocr : auto_flag_ocr
     end
 
     def analyze_images(image_info)
@@ -25,9 +47,7 @@ module ::DiscourseImageEnhancement
       end
 
       if response.status != 200
-        Rails.logger.warn(
-          "Failed to analyze images #{response.status}: #{response.body}",
-        )
+        Rails.logger.warn("Failed to analyze images #{response.status}: #{response.body}")
         return nil
       end
 

@@ -52,9 +52,7 @@ describe DiscourseImageEnhancement::Filter do
       image_upload1.update!(width: 150, height: 150)
       image_upload2.update!(width: 50, height: 50)
       uploads =
-        described_class.filter_upload(
-          Upload.where(id: [image_upload1.id, image_upload2.id]),
-        )
+        described_class.filter_upload(Upload.where(id: [image_upload1.id, image_upload2.id]))
       expect(uploads).to match_array([image_upload1])
     end
 
@@ -62,9 +60,7 @@ describe DiscourseImageEnhancement::Filter do
       image_upload1.update!(filesize: 2048.kilobytes)
       image_upload2.update!(filesize: 1024.kilobytes)
       uploads =
-        described_class.filter_upload(
-          Upload.where(id: [image_upload1.id, image_upload2.id]),
-        )
+        described_class.filter_upload(Upload.where(id: [image_upload1.id, image_upload2.id]))
       expect(uploads).to match_array([image_upload2])
     end
 
@@ -72,9 +68,7 @@ describe DiscourseImageEnhancement::Filter do
       image_upload1.update!(original_filename: "image1.jpeg")
       image_upload2.update!(original_filename: "image2.gif")
       uploads =
-        described_class.filter_upload(
-          Upload.where(id: [image_upload1.id, image_upload2.id]),
-        )
+        described_class.filter_upload(Upload.where(id: [image_upload1.id, image_upload2.id]))
       expect(uploads).to match_array([image_upload1])
     end
 
@@ -83,9 +77,7 @@ describe DiscourseImageEnhancement::Filter do
       image_upload2.update!(original_sha1: "5678")
       ImageSearchData.create(sha1: "1234", upload_id: image_upload1.id)
       uploads =
-        described_class.filter_upload(
-          Upload.where(id: [image_upload1.id, image_upload2.id]),
-        )
+        described_class.filter_upload(Upload.where(id: [image_upload1.id, image_upload2.id]))
       expect(uploads).to match_array([image_upload2])
       uploads =
         described_class.filter_upload(
@@ -102,9 +94,7 @@ describe DiscourseImageEnhancement::Filter do
         { image_upload1.sha1 => 4, image_upload2.sha1 => 2 },
       )
       uploads =
-        described_class.filter_upload(
-          Upload.where(id: [image_upload1.id, image_upload2.id]),
-        )
+        described_class.filter_upload(Upload.where(id: [image_upload1.id, image_upload2.id]))
       expect(uploads).to match_array([image_upload2])
       uploads =
         described_class.filter_upload(
@@ -151,9 +141,7 @@ describe DiscourseImageEnhancement::Filter do
         [image_search_data1, image_search_data2],
       )
       Fabricate(:post, uploads: [image_upload1])
-      expect(described_class.image_search_data_need_remove).to match_array(
-        [image_search_data2],
-      )
+      expect(described_class.image_search_data_need_remove).to match_array([image_search_data2])
     end
 
     it "should remove data with no visible posts" do
@@ -165,9 +153,7 @@ describe DiscourseImageEnhancement::Filter do
         [image_search_data1, image_search_data2],
       )
       Fabricate(:post, uploads: [image_upload1])
-      expect(described_class.image_search_data_need_remove).to match_array(
-        [image_search_data2],
-      )
+      expect(described_class.image_search_data_need_remove).to match_array([image_search_data2])
     end
 
     it "should ignore max_retry_times" do
@@ -196,18 +182,12 @@ describe DiscourseImageEnhancement::Filter do
       expect(described_class.posts_need_analysis).to match_array([post])
       ImageSearchData.create(sha1: image_upload2.sha1, upload_id: image_upload2.id)
       expect(described_class.posts_need_analysis).to match_array([])
-      expect(
-        described_class.posts_need_analysis(exclude_existing: false),
-      ).to match_array([post])
+      expect(described_class.posts_need_analysis(exclude_existing: false)).to match_array([post])
     end
 
     it "should exclude max_images_per_post" do
-      expect(
-        described_class.posts_need_analysis(max_images_per_post: 1),
-      ).to match_array([])
-      expect(
-        described_class.posts_need_analysis(max_images_per_post: 3),
-      ).to match_array([post])
+      expect(described_class.posts_need_analysis(max_images_per_post: 1)).to match_array([])
+      expect(described_class.posts_need_analysis(max_images_per_post: 3)).to match_array([post])
       SiteSetting.image_enhancement_max_images_per_post = 1
       expect(described_class.posts_need_analysis).to match_array([])
     end

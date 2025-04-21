@@ -17,9 +17,7 @@ module ::DiscourseImageEnhancement
       end
 
       if response.status != 200
-        Rails.logger.warn(
-          "Failed to embed text #{response.status}: #{response.body}",
-        )
+        Rails.logger.warn("Failed to embed text #{response.status}: #{response.body}")
         return nil
       end
 
