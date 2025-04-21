@@ -93,11 +93,11 @@ describe DiscourseImageEnhancement::ImageAnalysis do
   describe "can analyze post" do
     fab!(:image_upload)
     before(:example) do
-      api_endpoint = "https://api.example.com/analyze_image"
+      api_endpoint = "https://api.example.com/"
       SiteSetting.image_enhancement_enabled = true
       SiteSetting.image_enhancement_analyze_service_endpoint = api_endpoint
       SiteSetting.default_locale = "en"
-      WebMock.stub_request(:post, api_endpoint).to_return(
+      WebMock.stub_request(:post, URI.join(api_endpoint, "analyze/")).to_return(
         body: {
           images: [
             {
@@ -108,6 +108,12 @@ describe DiscourseImageEnhancement::ImageAnalysis do
               success: true,
             },
           ],
+        }.to_json,
+      )
+      WebMock.stub_request(:post, URI.join(api_endpoint, "text_embedding/")).to_return(
+        body: {
+          "embedding": Array.new(512) { rand },
+          "success": true,
         }.to_json,
       )
     end

@@ -11,7 +11,8 @@ module ::DiscourseImageEnhancement
 
     def analyze_images(image_info)
       body = build_query_body(image_info)
-      uri = URI.parse(SiteSetting.image_enhancement_analyze_service_endpoint)
+      base_uri = URI.parse(SiteSetting.image_enhancement_analyze_service_endpoint)
+      uri = URI.join(base_uri, "/analyze/")
       headers = build_query_headers(uri, body)
 
       connection = Faraday.new { |f| f.adapter FinalDestination::FaradayAdapter }

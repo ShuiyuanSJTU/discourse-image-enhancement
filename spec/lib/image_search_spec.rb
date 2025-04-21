@@ -4,8 +4,10 @@ require "rails_helper"
 
 describe DiscourseImageEnhancement::ImageSearch do
   before do
+    api_endpoint = "https://api.example.com/"
     SiteSetting.image_enhancement_enabled = true
     SiteSetting.image_search_enabled = true
+    SiteSetting.image_enhancement_analyze_service_endpoint = api_endpoint
   end
 
   describe "can search image" do

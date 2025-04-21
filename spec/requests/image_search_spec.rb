@@ -4,6 +4,14 @@ describe ::ImageEnhancementController do
   before do
     SiteSetting.image_enhancement_enabled = true
     SiteSetting.image_search_enabled = true
+    api_endpoint = "https://api.example.com/"
+    SiteSetting.image_enhancement_analyze_service_endpoint = api_endpoint
+    WebMock.stub_request(:post, URI.join(api_endpoint, "text_embedding/")).to_return(
+      body: {
+        "embedding": Array.new(512) { rand },
+        "success": true,
+      }.to_json,
+    )
   end
 
   it "handles image search page" do
