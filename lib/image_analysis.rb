@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 module ::DiscourseImageEnhancement
   class ImageAnalysis
-    def initialize(record_failed: nil, analyze_ocr: nil, analyze_description: nil, analyze_embedding: nil, auto_flag_ocr: nil)
-      @record_failed = record_failed.nil? ? SiteSetting.image_enhancement_record_failed : record_failed
-      @analyze_ocr = analyze_ocr.nil? ? SiteSetting.image_enhancement_analyze_ocr : analyze_ocr
-      @analyze_description = analyze_description.nil? ? SiteSetting.image_enhancement_analyze_description : analyze_description
-      @analyze_embedding = analyze_embedding.nil? ? SiteSetting.image_enhancement_analyze_embedding : analyze_embedding
+    def initialize(record_failed: true, analyze_ocr: nil, analyze_description: nil, analyze_embedding: nil, auto_flag_ocr: nil)
+      @record_failed = record_failed
+      @analyze_ocr = analyze_ocr.nil? ? SiteSetting.image_enhancement_analyze_ocr_enabled : analyze_ocr
+      @analyze_description = analyze_description.nil? ? SiteSetting.image_enhancement_analyze_description_enabled : analyze_description
+      @analyze_embedding = analyze_embedding.nil? ? SiteSetting.image_enhancement_analyze_embedding_enabled : analyze_embedding
       @auto_flag_ocr = auto_flag_ocr.nil? ? SiteSetting.image_enhancement_auto_flag_ocr : auto_flag_ocr
     end
 
@@ -75,22 +75,22 @@ module ::DiscourseImageEnhancement
 
     def save_analyzed_image_data(image_result, upload)
       return if ImageSearchData.find_by(upload_id: upload.id).present?
-      if @analyze_ocr
+      if @analyze_ocr && image_result[:ocr_result].present?
         ocr_text = image_result[:ocr_result].join("\n")
         ocr_text_search_data = Search.prepare_data(ocr_text, :index)
       else
         ocr_text = nil
         ocr_text_search_data = nil
       end
-      if @analyze_description
+      if @analyze_description && image_result[:description].present?
         description = image_result[:description]
         description_search_data = Search.prepare_data(description, :index)
       else
         description = nil
         description_search_data = nil
       end
-      if @analyze_embedding
-        embedding = image_result[:embedding]
+      if @analyze_embedding && image_result[:embedding].present?
+        embedding = image_result[:embedding].to_s
       else
         embedding = nil
       end
@@ -166,6 +166,10 @@ module ::DiscourseImageEnhancement
       if ocr_text.present? && WordWatcher.new(ocr_text).should_flag?
         PostActionCreator.create(Discourse.system_user, post, :inappropriate, reason: :watched_word)
       end
+    end
+
+    def self.analyze_images(image_info)
+      self.new.analyze_images(image_info)
     end
   end
 end

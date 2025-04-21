@@ -17,7 +17,7 @@ class DiscourseImageEnhancement::ImageSearch
   class ImageSearchResult
     include ActiveModel::Serialization
 
-    attr_reader :search_ocr, :search_description, :term
+    attr_reader :search_ocr, :search_description, :search_embeddings, :term, :has_more
 
     def grouped_results
       @grouped_results ||=
@@ -28,39 +28,38 @@ class DiscourseImageEnhancement::ImageSearch
           end
     end
 
-    def has_more
-      @has_more ||=
-        begin
-          return false if @posts.length == 0
-          return false if @limit.present? && @posts.length < @limit
-          true
-        end
-    end
-
     def initialize(
-      result,
+      posts_id,
+      uploads_id,
       term: nil,
       search_ocr: true,
       search_description: true,
+      search_embeddings: true,
       page: 0,
-      limit: nil
+      limit: nil,
+      has_more: true
     )
       @term = term
       @search_ocr = search_ocr
       @search_description = search_description
       @page = page
       @limit = limit
+      @has_more = has_more
+      posts_id = [] if posts_id.nil?
+      uploads_id = [] if uploads_id.nil?
 
-      result =
-        result
-          .select("posts.*,uploads.id as upload_id")
-          .includes(topic: %i[tags category])
-          .includes(:user)
-      @posts = result
+      # result =
+      #   result
+      #     .select("posts.*,uploads.id as upload_id")
+      #     .includes(topic: %i[tags category])
+      #     .includes(:user)
+      # uploads = Upload.where(id: result.map(&:upload_id)).includes(:optimized_images).group_by(&:id)
+      posts = Post.where(id: posts_id).includes(topic: %i[tags category]).includes(:user)
+      uploads = Upload.where(id: uploads_id).includes(:optimized_images).group_by(&:id)
+      @posts = posts_id.map { |id| posts.find { |post| post.id == id } }
       @users = @posts.map(&:user)
       @topics = @posts.map(&:topic)
-      uploads = Upload.where(id: result.map(&:upload_id)).includes(:optimized_images).group_by(&:id)
-      @images = result.map(&:upload_id).map { |id| uploads[id].first }
+      @images = uploads_id.map { |id| uploads[id].first }
       @optimized_images = @images.map(&:optimized_images)
     end
   end
