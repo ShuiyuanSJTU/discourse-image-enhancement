@@ -79,6 +79,7 @@ module ::DiscourseImageEnhancement
       return nil if image_info.blank?
       return nil if image_info.length > SiteSetting.image_enhancement_max_images_per_post
       analyze_images(image_info)
+      check_for_flag(post)
     end
 
     def process_image(upload)
@@ -95,27 +96,26 @@ module ::DiscourseImageEnhancement
     end
 
     def save_analyzed_image_data(image_result, upload)
-      return if ImageSearchData.find_by(upload_id: upload.id).present?
-      if @analyze_ocr && image_result[:ocr_result].present?
+      if @analyze_ocr && !image_result[:ocr_result].nil?
         ocr_text = image_result[:ocr_result].join("\n")
         ocr_text_search_data = Search.prepare_data(ocr_text, :index)
       else
         ocr_text = nil
         ocr_text_search_data = nil
       end
-      if @analyze_description && image_result[:description].present?
+      if @analyze_description && !image_result[:description].nil?
         description = image_result[:description]
         description_search_data = Search.prepare_data(description, :index)
       else
         description = nil
         description_search_data = nil
       end
-      if @analyze_embedding && image_result[:embedding].present?
+      if @analyze_embedding && !image_result[:embedding].nil?
         embedding = image_result[:embedding].to_s
       else
         embedding = nil
       end
-      return if ocr_text.nil? && description.nil?
+      return if ocr_text.nil? && description.nil? && embedding.nil?
       params = {
         upload_id: upload.id,
         sha1: image_result[:sha1],

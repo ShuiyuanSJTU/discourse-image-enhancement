@@ -18,8 +18,9 @@ module Jobs
         no_more = backfill_posts_id.count < 100
         backfill_posts_id.each do |post_id|
           break if Time.now - start_time > 50.minutes
+          analyzer = ::DiscourseImageEnhancement::ImageAnalysis.new(auto_flag_ocr: false)
           post = Post.find_by(id: post_id)
-          reslult = ::DiscourseImageEnhancement::ImageAnalysis.process_post(post)
+          reslult = analyzer.process_post(post)
           failed_post_count += 1 if reslult.nil?
         end
         # break the while loop, all lefts are failed posts, ignore them
