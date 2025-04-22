@@ -54,8 +54,11 @@ module ::DiscourseImageEnhancement
       posts = apply_advanced_filters(Post.visible.public_posts)
       search_result_images = search_images_embedding(term, limit: limit, offset: offset)
       image_ids = search_result_images.map(&:upload_id)
-      posts = posts.joins(:uploads).where(uploads: { id: image_ids })
+      return Post.joins(:uploads).none if image_ids.blank?
       posts
+        .joins(:uploads)
+        .where(uploads: { id: image_ids })
+        .order(["array_position(ARRAY[?], uploads.id)", image_ids])
     end
 
     def search_images_embedding(term = nil, limit:, offset:)
@@ -80,8 +83,10 @@ module ::DiscourseImageEnhancement
           upload_id
         FROM
           candidates
+        WHERE
+          (embeddings::halfvec(512) <=> '[:query_embedding]'::halfvec(512)) >= :threshold
         ORDER BY
-          embeddings::halfvec(512) <#> '[:query_embedding]'::halfvec(512)
+          (embeddings::halfvec(512) <=> '[:query_embedding]'::halfvec(512)) DESC
         LIMIT :limit
         OFFSET :offset;
       SQL
@@ -93,6 +98,7 @@ module ::DiscourseImageEnhancement
           candidates_limit: limit * 2 + offset,
           limit: limit,
           offset: offset,
+          threshold: SiteSetting.image_enhancement_embedding_similarity_threshold,
         )
       end
     rescue PG::Error => e
