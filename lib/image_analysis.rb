@@ -154,10 +154,19 @@ module ::DiscourseImageEnhancement
       Filter
         .filter_upload(uploads)
         .map do |u|
-          url = UrlHelper.cook_url(u.url, secure: u.secure)
-          url = Upload.signed_url_from_secure_uploads_url(url) if Upload.secure_uploads_url?(url)
+          url = extract_image_url(u)
           { id: u.id, sha1: u.original_sha1 || u.sha1, url: url }
         end
+    end
+
+    def extract_image_url(upload)
+      if SiteSetting.image_enhancement_analyze_image_base64_encoded
+        url = image_to_base64(upload)
+      else
+        url = UrlHelper.cook_url(upload.url, secure: upload.secure)
+        url = Upload.signed_url_from_secure_uploads_url(url) if Upload.secure_uploads_url?(url)
+      end
+      url
     end
 
     def build_query_body(images)
@@ -191,6 +200,23 @@ module ::DiscourseImageEnhancement
 
     def self.analyze_images(image_info)
       self.new.analyze_images(image_info)
+    end
+
+    def image_to_base64(upload)
+      original_path = Discourse.store.path_for(upload)
+      if original_path.blank?
+        # download is protected with a DistributedMutex
+        fp = Discourse.store.download_safe(upload)
+      else
+        fp = File.open(original_path, "rb")
+      end
+
+      begin
+        base64_data = Base64.strict_encode64(fp.read)
+        "data:image/#{upload.extension};base64,#{base64_data}"
+      ensure
+        fp.close if fp
+      end
     end
   end
 end

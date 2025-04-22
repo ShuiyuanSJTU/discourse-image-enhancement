@@ -17,6 +17,9 @@ plugins:
   image_enhancement_analyze_service_endpoint:
     default: ''
     client: false
+  image_enhancement_analyze_image_base64_encoded:
+    default: false
+    client: false
   image_enhancement_analyze_service_key:
     default: ''
     client: false
