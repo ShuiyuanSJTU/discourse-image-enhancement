@@ -9,7 +9,7 @@ export default class extends Controller {
   searching = false;
   loadingMore = false;
   noMoreResults = false;
-  searchActive = false;
+  searchActivated = false;
   searchTerm = "";
   page = 0;
   searchResults = {};
@@ -22,16 +22,16 @@ export default class extends Controller {
 
   searchTypes = [
     {
-      name: i18n("image_search.search_type.ocr_and_desc"),
-      id: "image_search_ocr_and_description",
-    },
-    {
       name: i18n("image_search.search_type.ocr_only"),
       id: "image_search_ocr",
     },
     {
-      name: i18n("image_search.search_type.desc_only"),
-      id: "image_search_description",
+      name: i18n("image_search.search_type.embed_only"),
+      id: "image_search_embed",
+    },
+    {
+      name: i18n("image_search.search_type.ocr_and_embed"),
+      id: "image_search_ocr_and_embed",
     },
   ];
 
@@ -46,17 +46,17 @@ export default class extends Controller {
     searchData.term = this.get("q");
     searchData.page = this.get("page");
     switch (this.get("search_type")) {
-      case "image_search_ocr_and_description":
+      case "image_search_ocr_and_embed":
         searchData.ocr = true;
-        searchData.description = true;
+        searchData.embed = true;
         break;
       case "image_search_ocr":
         searchData.ocr = true;
-        searchData.description = false;
+        searchData.embed = false;
         break;
-      case "image_search_description":
+      case "image_search_embed":
         searchData.ocr = false;
-        searchData.description = true;
+        searchData.embed = true;
         break;
     }
     return ajax("/image-search/search.json", { data: searchData });
@@ -85,9 +85,9 @@ export default class extends Controller {
 
   @observes("search_type")
   triggerSearchOnTypeChange() {
-    if (this.searchActive) {
+    if (this.searchActivated) {
       this.resetSearch();
-      this._search();
+      this.search();
     }
   }
 
@@ -97,7 +97,7 @@ export default class extends Controller {
       this.set("invalidSearch", true);
       return;
     }
-    this.set("searchActive", true);
+    this.set("searchActivated", true);
     this.set("invalidSearch", false);
     this.resetSearch();
     this.set("searching", true);

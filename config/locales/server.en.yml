@@ -14,6 +14,5 @@ en:
     image_enhancement_analyze_image_base64_encoded: "Enable Base64 encoding for images to be analyzed"
     image_enhancement_analyze_service_key: "Image analysis service key"
     image_enhancement_analyze_ocr_enabled: "Enable OCR analysis"
-    image_enhancement_analyze_description_enabled: "Enable image description analysis"
     image_enhancement_analyze_embedding_enabled: "Enable image embedding analysis"
     image_enhancement_embedding_similarity_threshold: "Image embedding similarity threshold"

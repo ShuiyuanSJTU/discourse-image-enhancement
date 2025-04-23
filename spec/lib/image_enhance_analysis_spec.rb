@@ -5,7 +5,6 @@ require "rails_helper"
 describe DiscourseImageEnhancement::ImageAnalysis do
   before(:example) do
     SiteSetting.image_enhancement_analyze_ocr_enabled = true
-    SiteSetting.image_enhancement_analyze_description_enabled = true
     SiteSetting.image_enhancement_analyze_embedding_enabled = true
   end
 
@@ -17,14 +16,12 @@ describe DiscourseImageEnhancement::ImageAnalysis do
       image = {
         sha1: "1234",
         ocr_result: ["a car", "a man"],
-        description: "a flying car",
         embedding: Array.new(512) { rand },
         success: true,
       }
       described_class.new.save_analyzed_image_data(image, image_upload)
       expect(ImageSearchData.find_by(sha1: "1234").upload_id).to eq(image_upload.id)
       expect(ImageSearchData.find_by(sha1: "1234").ocr_text).to eq("a car\na man")
-      expect(ImageSearchData.find_by(sha1: "1234").description_search_data).to eq("'car':3 'fli':2")
       expect(ImageSearchData.find_by(sha1: "1234").embeddings).to be_present
     end
 
@@ -33,14 +30,12 @@ describe DiscourseImageEnhancement::ImageAnalysis do
       image = {
         sha1: "1234",
         ocr_result: %w[一辆车 天空],
-        description: "一辆飞行的汽车",
         embedding: Array.new(512) { rand },
         success: true,
       }
       described_class.new.save_analyzed_image_data(image, image_upload)
       expect(ImageSearchData.find_by(sha1: "1234").upload_id).to eq(image_upload.id)
       expect(ImageSearchData.find_by(sha1: "1234").ocr_text).to eq("一辆车\n天空")
-      expect(ImageSearchData.find_by(sha1: "1234").description_search_data).to be_present
       expect(ImageSearchData.find_by(sha1: "1234").embeddings).to be_present
     end
   end
@@ -73,7 +68,6 @@ describe DiscourseImageEnhancement::ImageAnalysis do
           {
             sha1: image_upload.sha1,
             ocr_result: ["a car", "another car"],
-            description: "a flying car",
             embedding: Array.new(512) { rand },
             success: true,
           },
@@ -102,7 +96,6 @@ describe DiscourseImageEnhancement::ImageAnalysis do
             {
               sha1: image_upload.sha1,
               ocr_result: ["a car"],
-              description: "a flying car",
               embedding: Array.new(512) { rand },
               success: true,
             },

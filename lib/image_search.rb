@@ -2,20 +2,11 @@
 
 module ::DiscourseImageEnhancement
   class ImageSearch
-    def initialize(
-      term,
-      limit: 20,
-      page: 0,
-      ocr: true,
-      description: true,
-      embeddings: true,
-      guardian: nil
-    )
+    def initialize(term, limit: 20, page: 0, ocr: true, embeddings: true, guardian: nil)
       @term = term
       @limit = limit
       @page = page
       @ocr = ocr
-      @description = description
       @embeddings = embeddings
       @has_more = true
       @guardian = guardian || Guardian.new
@@ -138,7 +129,7 @@ module ::DiscourseImageEnhancement
             @has_more = res.length >= @limit
             res
           else
-            nil
+            []
           end
         end
 
@@ -148,7 +139,6 @@ module ::DiscourseImageEnhancement
         uploads_id,
         term: @term,
         search_ocr: @ocr,
-        search_description: @description,
         search_embeddings: @embeddings,
         page: @page,
         limit: @limit,

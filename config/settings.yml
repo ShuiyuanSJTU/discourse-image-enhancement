@@ -44,9 +44,6 @@ plugins:
   image_enhancement_analyze_ocr_enabled:
     default: false
     client: false
-  image_enhancement_analyze_description_enabled:
-    default: false
-    client: false
   image_enhancement_analyze_embedding_enabled:
     default: false
     client: false

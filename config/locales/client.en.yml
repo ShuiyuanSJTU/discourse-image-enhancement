@@ -4,9 +4,9 @@ en:
       title: "Image Search"
       description: "Search for related images, posts, or topics by entering text in the image or describing the content of the image"
       search_type:
-        ocr_and_desc: "Comprehensive"
+        ocr_and_embed: "Comprehensive"
         ocr_only: "Image Text"
-        desc_only: "Image Content"
+        embed_only: "Image Content"
     search:
       type:
         images: "Images"

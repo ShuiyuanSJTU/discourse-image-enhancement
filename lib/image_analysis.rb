@@ -4,21 +4,12 @@ module ::DiscourseImageEnhancement
     def initialize(
       record_failed: true,
       analyze_ocr: nil,
-      analyze_description: nil,
       analyze_embedding: nil,
       auto_flag_ocr: nil
     )
       @record_failed = record_failed
       @analyze_ocr =
         analyze_ocr.nil? ? SiteSetting.image_enhancement_analyze_ocr_enabled : analyze_ocr
-      @analyze_description =
-        (
-          if analyze_description.nil?
-            SiteSetting.image_enhancement_analyze_description_enabled
-          else
-            analyze_description
-          end
-        )
       @analyze_embedding =
         (
           if analyze_embedding.nil?
@@ -89,7 +80,6 @@ module ::DiscourseImageEnhancement
       existing_search_data = ImageSearchData.find_by(upload_id: upload.id)
       if existing_search_data.present?
         @analyze_ocr = false if existing_search_data.ocr_text.present?
-        @analyze_description = false if existing_search_data.description.present?
         @analyze_embedding = false if existing_search_data.embedding.present?
       end
       analyze_images(image_info)
@@ -103,37 +93,26 @@ module ::DiscourseImageEnhancement
         ocr_text = nil
         ocr_text_search_data = nil
       end
-      if @analyze_description && !image_result[:description].nil?
-        description = image_result[:description]
-        description_search_data = Search.prepare_data(description, :index)
-      else
-        description = nil
-        description_search_data = nil
-      end
       if @analyze_embedding && !image_result[:embedding].nil?
         embedding = image_result[:embedding].to_s
       else
         embedding = nil
       end
-      return if ocr_text.nil? && description.nil? && embedding.nil?
+      return if ocr_text.nil? && embedding.nil?
       params = {
         upload_id: upload.id,
         sha1: image_result[:sha1],
         ocr_text: ocr_text,
-        description: description,
         ocr_text_search_data: ocr_text_search_data,
-        description_search_data: description_search_data,
         ts_config: Search.ts_config,
         embedding: embedding,
       }
       DB.exec(<<~SQL, params)
-        INSERT INTO image_search_data (upload_id, sha1, ocr_text, description, ocr_text_search_data, description_search_data, embeddings)
-        VALUES (:upload_id, :sha1, :ocr_text, :description, to_tsvector(:ts_config, :ocr_text_search_data), to_tsvector(:ts_config, :description_search_data), :embedding)
+        INSERT INTO image_search_data (upload_id, sha1, ocr_text, ocr_text_search_data, embeddings)
+        VALUES (:upload_id, :sha1, :ocr_text, to_tsvector(:ts_config, :ocr_text_search_data), :embedding)
         ON CONFLICT (upload_id) DO UPDATE SET
           ocr_text = COALESCE(EXCLUDED.ocr_text, image_search_data.ocr_text),
-          description = COALESCE(EXCLUDED.description, image_search_data.description),
           ocr_text_search_data = COALESCE(EXCLUDED.ocr_text_search_data, image_search_data.ocr_text_search_data),
-          description_search_data = COALESCE(EXCLUDED.description_search_data, image_search_data.description_search_data),
           embeddings = COALESCE(EXCLUDED.embeddings, image_search_data.embeddings)
       SQL
     end

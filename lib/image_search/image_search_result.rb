@@ -17,7 +17,7 @@ class DiscourseImageEnhancement::ImageSearch
   class ImageSearchResult
     include ActiveModel::Serialization
 
-    attr_reader :search_ocr, :search_description, :search_embeddings, :term, :has_more
+    attr_reader :search_ocr, :search_embeddings, :term, :has_more
 
     def grouped_results
       @grouped_results ||=
@@ -33,7 +33,6 @@ class DiscourseImageEnhancement::ImageSearch
       uploads_id,
       term: nil,
       search_ocr: true,
-      search_description: true,
       search_embeddings: true,
       page: 0,
       limit: nil,
@@ -41,7 +40,7 @@ class DiscourseImageEnhancement::ImageSearch
     )
       @term = term
       @search_ocr = search_ocr
-      @search_description = search_description
+      @search_embeddings = search_embeddings
       @page = page
       @limit = limit
       @has_more = has_more

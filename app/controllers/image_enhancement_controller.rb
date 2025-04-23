@@ -11,13 +11,13 @@ class ImageEnhancementController < ::ApplicationController
   def search
     term = params.require(:term)
     ocr = params.fetch(:ocr, "true") == "true"
-    description = params.fetch(:description, "true") == "true"
+    embeddings = params.fetch(:embed, "true") == "true"
     page = params.fetch(:page, 0).to_i
     saerch_results =
       ::DiscourseImageEnhancement::ImageSearch.new(
         term,
         ocr: ocr,
-        description: description,
+        embeddings: embeddings,
         page: page,
         guardian: Guardian.new(current_user),
       ).execute
