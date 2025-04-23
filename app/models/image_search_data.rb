@@ -13,15 +13,17 @@ end
 #
 # Table name: image_search_data
 #
-#  sha1                    :string           not null, primary key
+#  sha1                    :string           not null
 #  ocr_text                :text
 #  description             :text
 #  ocr_text_search_data    :tsvector
 #  description_search_data :tsvector
-#  upload_id               :integer          not null
+#  upload_id               :integer          not null, primary key
+#  embeddings              :halfvec
 #
 # Indexes
 #
+#  image_search_data_embeddings_index                  (((binary_quantize(embeddings))::bit(512)) bit_hamming_ops) USING hnsw
 #  index_image_search_data_on_description_search_data  (description_search_data) USING gin
 #  index_image_search_data_on_ocr_text_search_data     (ocr_text_search_data) USING gin
 #  index_image_search_data_on_sha1                     (sha1)
