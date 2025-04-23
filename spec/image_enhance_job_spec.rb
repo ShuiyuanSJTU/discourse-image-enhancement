@@ -45,10 +45,16 @@ describe ::Jobs::ImageSearchAutoBackfill do
   end
 
   let(:image_upload1) { Fabricate(:upload) }
-  let(:post) { Fabricate(:post, uploads: [image_upload1]) }
+  let(:post) do
+    Fabricate(
+      :post,
+      uploads: [image_upload1],
+      topic: Fabricate(:topic, category: Fabricate(:category)),
+    )
+  end
 
   it "should invoke process_post" do
-    ::DiscourseImageEnhancement::ImageAnalysis.expects(:process_post).with(post).once
+    ::DiscourseImageEnhancement::ImageAnalysis.any_instance.expects(:process_post).with(post).once
     described_class.new.execute({})
   end
 
@@ -71,7 +77,13 @@ describe ::Jobs::ImageSearchAutoCleanup do
   let!(:image_search_data) do
     ImageSearchData.create(sha1: image_upload.sha1, upload_id: image_upload.id)
   end
-  let(:post) { Fabricate(:post, uploads: [image_upload]) }
+  let(:post) do
+    Fabricate(
+      :post,
+      uploads: [image_upload],
+      topic: Fabricate(:topic, category: Fabricate(:category)),
+    )
+  end
 
   it "should not cleanup image_search_data" do
     post

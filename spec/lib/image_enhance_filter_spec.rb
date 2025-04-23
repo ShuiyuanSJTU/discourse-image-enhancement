@@ -109,7 +109,13 @@ describe DiscourseImageEnhancement::Filter do
     before {}
     let(:image_upload1) { Fabricate(:upload) }
     let(:image_upload2) { Fabricate(:upload) }
-    let!(:post) { Fabricate(:post, uploads: [image_upload1, image_upload2]) }
+    let!(:post) do
+      Fabricate(
+        :post,
+        uploads: [image_upload1, image_upload2],
+        topic: Fabricate(:topic, category: Fabricate(:category)),
+      )
+    end
     let!(:image_search_data1) do
       ImageSearchData.create(sha1: image_upload1.sha1, upload_id: image_upload1.id)
     end
@@ -140,7 +146,11 @@ describe DiscourseImageEnhancement::Filter do
       expect(described_class.image_search_data_need_remove).to match_array(
         [image_search_data1, image_search_data2],
       )
-      Fabricate(:post, uploads: [image_upload1])
+      Fabricate(
+        :post,
+        uploads: [image_upload1],
+        topic: Fabricate(:topic, category: Fabricate(:category)),
+      )
       expect(described_class.image_search_data_need_remove).to match_array([image_search_data2])
     end
 
@@ -152,7 +162,11 @@ describe DiscourseImageEnhancement::Filter do
       expect(described_class.image_search_data_need_remove).to match_array(
         [image_search_data1, image_search_data2],
       )
-      Fabricate(:post, uploads: [image_upload1])
+      Fabricate(
+        :post,
+        uploads: [image_upload1],
+        topic: Fabricate(:topic, category: Fabricate(:category)),
+      )
       expect(described_class.image_search_data_need_remove).to match_array([image_search_data2])
     end
 

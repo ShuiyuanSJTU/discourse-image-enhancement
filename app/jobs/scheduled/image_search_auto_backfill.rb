@@ -20,8 +20,8 @@ module Jobs
           break if Time.now - start_time > 50.minutes
           analyzer = ::DiscourseImageEnhancement::ImageAnalysis.new(auto_flag_ocr: false)
           post = Post.find_by(id: post_id)
-          reslult = analyzer.process_post(post)
-          failed_post_count += 1 if reslult.nil?
+          result = analyzer.process_post(post)
+          failed_post_count += 1 if result.nil?
         end
         # break the while loop, all lefts are failed posts, ignore them
         break if no_more

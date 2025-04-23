@@ -5,7 +5,7 @@ class ImageSearchData < ActiveRecord::Base
   self.primary_key = :upload_id
 
   def self.find_by_post(post)
-    self.where(sha1: post.uploads.pluck("COALESCE(uploads.original_sha1, uploads.sha1)").uniq)
+    self.where(upload_id: post.uploads.pluck(:id))
   end
 end
 

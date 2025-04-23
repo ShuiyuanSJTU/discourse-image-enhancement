@@ -84,9 +84,9 @@ module ::DiscourseImageEnhancement
         FROM
           candidates
         WHERE
-          (embeddings::halfvec(512) <=> '[:query_embedding]'::halfvec(512)) >= :threshold
+          (1 - (embeddings::halfvec(512) <=> '[:query_embedding]'::halfvec(512))) >= :threshold
         ORDER BY
-          (embeddings::halfvec(512) <=> '[:query_embedding]'::halfvec(512)) DESC
+          embeddings::halfvec(512) <=> '[:query_embedding]'::halfvec(512)
         LIMIT :limit
         OFFSET :offset;
       SQL

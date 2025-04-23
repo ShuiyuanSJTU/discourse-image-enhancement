@@ -77,7 +77,6 @@ describe DiscourseImageEnhancement::ImageAnalysis do
             embedding: Array.new(512) { rand },
             success: true,
           },
-          { sha1: "5678", ocr_result: ["a human"], description: "", success: true },
         ],
       }
       post = Fabricate(:post, raw: "![image1](#{image_upload.short_url})", uploads: [image_upload])
@@ -115,7 +114,13 @@ describe DiscourseImageEnhancement::ImageAnalysis do
       )
     end
     it "can analyze post" do
-      post = Fabricate(:post, raw: "![image1](#{image_upload.short_url})", uploads: [image_upload])
+      post =
+        Fabricate(
+          :post,
+          raw: "![image1](#{image_upload.short_url})",
+          uploads: [image_upload],
+          topic: Fabricate(:topic, category: Fabricate(:category)),
+        )
       described_class.new.process_post(post)
       expect(ImageSearchData.find_by(sha1: image_upload.sha1).ocr_text).to eq("a car")
     end

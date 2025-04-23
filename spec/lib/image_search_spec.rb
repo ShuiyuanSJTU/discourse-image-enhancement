@@ -44,6 +44,7 @@ describe DiscourseImageEnhancement::ImageSearch do
     end
 
     it "searches using embeddings only" do
+      SiteSetting.image_enhancement_embedding_similarity_threshold = 0
       search = described_class.new("car", ocr: false, embeddings: true)
       allow(DiscourseImageEnhancement::TextEmbedding).to receive(:embed_text).and_return(
         JSON.parse(image_search_data1.embeddings),
@@ -55,7 +56,7 @@ describe DiscourseImageEnhancement::ImageSearch do
     end
 
     it "searches using both OCR and embeddings" do
-      search = described_class.new("car", ocr: true, embeddings: true)
+      search = described_class.new("plane", ocr: true, embeddings: true)
       allow(DiscourseImageEnhancement::TextEmbedding).to receive(:embed_text).and_return(
         JSON.parse(image_search_data1.embeddings),
       )
