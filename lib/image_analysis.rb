@@ -1,11 +1,22 @@
 # frozen_string_literal: true
 module ::DiscourseImageEnhancement
   class ImageAnalysis
+    # Initializes a new instance of the ImageAnalysis class.
+    #
+    # @param record_failed [Boolean] Determines whether to record failed analyses. Defaults to true.
+    # @param analyze_ocr [Boolean, nil] Specifies whether to analyze OCR (Optical Character Recognition).
+    #   If nil, the value is determined by the `SiteSetting.image_enhancement_analyze_ocr_enabled` setting.
+    # @param analyze_embedding [Boolean, nil] Specifies whether to analyze embeddings.
+    #   If nil, the value is determined by the `SiteSetting.image_enhancement_analyze_embedding_enabled` setting.
+    # @param auto_flag_ocr [Boolean, nil] Specifies whether to automatically flag OCR results.
+    #   If nil, the value is determined by the `SiteSetting.image_enhancement_auto_flag_ocr` setting.
+    # @param force [Boolean] Force to reanalyze images, ignoring existing search data and filtering rules. Defaults to false.
     def initialize(
       record_failed: true,
       analyze_ocr: nil,
       analyze_embedding: nil,
-      auto_flag_ocr: nil
+      auto_flag_ocr: nil,
+      force: false
     )
       @record_failed = record_failed
       @analyze_ocr =
@@ -20,9 +31,12 @@ module ::DiscourseImageEnhancement
         )
       @auto_flag_ocr =
         auto_flag_ocr.nil? ? SiteSetting.image_enhancement_auto_flag_ocr : auto_flag_ocr
+      @force = force
     end
 
     def analyze_images(image_info)
+      return nil if image_info.blank?
+      return nil if !@analyze_ocr && !@analyze_embedding
       body = build_query_body(image_info)
       base_uri = URI.parse(SiteSetting.image_enhancement_analyze_service_endpoint)
       uri = URI.join(base_uri, "/analyze/")
@@ -75,17 +89,43 @@ module ::DiscourseImageEnhancement
 
     def process_image(upload)
       return nil if upload.blank?
+      if !@force
+        sha1 = upload.original_sha1 || upload.sha1
+        search_data = ImageSearchData.find_or_initialize_by(upload_id: upload.id, sha1: sha1)
+        existing_search_data =
+          ImageSearchData
+            .where(sha1: sha1)
+            .where.not(upload_id: upload.id)
+            .where.not(ocr_text_search_data: nil)
+            .where.not(embeddings: nil)
+            .first
+        # try to reuse existing search data
+        if existing_search_data.present?
+          search_data.ocr_text = existing_search_data.ocr_text
+          search_data.ocr_text_search_data = existing_search_data.ocr_text_search_data
+          search_data.embeddings = existing_search_data.embeddings
+          return search_data.save!
+        else
+          # if the image is already partially analyzed, we don't need to analyze it again
+          @analyze_ocr = false if search_data.ocr_text_search_data.present?
+          @analyze_embedding = false if search_data.embeddings.present?
+          return nil if !@analyze_ocr && !@analyze_embedding
+        end
+      end
       image_info = extract_images(Upload.where(id: upload.id))
       return nil if image_info.blank?
-      existing_search_data = ImageSearchData.find_by(upload_id: upload.id)
-      if existing_search_data.present?
-        @analyze_ocr = false if existing_search_data.ocr_text.present?
-        @analyze_embedding = false if existing_search_data.embedding.present?
-      end
       analyze_images(image_info)
     end
 
     def save_analyzed_image_data(image_result, upload)
+      if (upload.original_sha1 || upload.sha1) != image_result[:sha1]
+        # sha1 mismatch, this should not happen
+        raise "Image sha1 mismatch" if Rails.env.test?
+        Rails.logger.warn(
+          "Image sha1 mismatch: #{upload.pluck(:original_sha1, :sha1).compact.first} != #{image_result[:sha1]}.\n#{upload.inspect}",
+        )
+        return
+      end
       if @analyze_ocr && !image_result[:ocr_result].nil?
         ocr_text = image_result[:ocr_result].join("\n")
         ocr_text_search_data = Search.prepare_data(ocr_text, :index)
@@ -119,17 +159,20 @@ module ::DiscourseImageEnhancement
 
     def should_analyze_image(upload)
       return false if upload.blank?
-      return true if Filter.filter_upload(Upload.where(id: upload), max_retry_times: -1).count > 0
+      if @force || Filter.filter_upload(Upload.where(id: upload), max_retry_times: -1).count > 0
+        return true
+      end
       true
     end
 
     def should_analyze_post(post)
       return false if post.blank? || post.id.blank?
-      return true if Filter.filter_post(Post.where(id: post)).count > 0
+      return true if @force || Filter.filter_post(Post.where(id: post)).count > 0
       false
     end
 
     def extract_images(uploads)
+      # TODO: deal with @force
       Filter
         .filter_upload(uploads)
         .map do |u|

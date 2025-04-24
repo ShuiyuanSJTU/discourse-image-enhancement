@@ -83,8 +83,16 @@ describe DiscourseImageEnhancement::ImageAnalysis do
     end
   end
 
-  describe "can analyze post" do
+  describe "can analyze" do
     fab!(:image_upload)
+    fab!(:post) do
+      Fabricate(
+        :post,
+        raw: "![image1](#{image_upload.short_url})",
+        uploads: [image_upload],
+        topic: Fabricate(:topic, category: Fabricate(:category)),
+      )
+    end
     before(:example) do
       api_endpoint = "https://api.example.com/"
       SiteSetting.image_enhancement_enabled = true
@@ -106,16 +114,27 @@ describe DiscourseImageEnhancement::ImageAnalysis do
         body: { embedding: Array.new(512) { rand }, success: true }.to_json,
       )
     end
-    it "can analyze post" do
-      post =
-        Fabricate(
-          :post,
-          raw: "![image1](#{image_upload.short_url})",
-          uploads: [image_upload],
-          topic: Fabricate(:topic, category: Fabricate(:category)),
-        )
+    it "can process post" do
       described_class.new.process_post(post)
       expect(ImageSearchData.find_by(sha1: image_upload.sha1).ocr_text).to eq("a car")
+    end
+    it "can process image" do
+      described_class.new.process_image(image_upload)
+      expect(ImageSearchData.find_by(sha1: image_upload.sha1).ocr_text).to eq("a car")
+    end
+    it "can reuse existing data" do
+      new_upload = Fabricate(:image_upload, original_sha1: image_upload.sha1)
+      ImageSearchData.create(
+        sha1: new_upload.original_sha1,
+        upload_id: new_upload.id,
+        ocr_text: "a car",
+        ocr_text_search_data: "'car':2",
+        embeddings: Array.new(512) { rand }.to_s,
+      )
+      described_class.any_instance.expects(:analyze_images).never
+      described_class.new.process_image(image_upload)
+      expect(ImageSearchData.find_by(sha1: image_upload.sha1).ocr_text).to eq("a car")
+      expect(ImageSearchData.where(sha1: image_upload.sha1).count).to eq(2)
     end
   end
 end
