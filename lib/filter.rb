@@ -39,7 +39,12 @@ module ::DiscourseImageEnhancement
       posts
     end
 
-    def self.filter_upload(uploads, exclude_existing: true, max_retry_times: nil)
+    def self.filter_upload(
+      uploads,
+      exclude_existing: true,
+      include_partially_analyzed: false,
+      max_retry_times: nil
+    )
       max_retry_times =
         SiteSetting.image_enhancement_max_retry_times_per_image if max_retry_times.nil?
       uploads =
@@ -49,23 +54,33 @@ module ::DiscourseImageEnhancement
           .where("height >= ?", SiteSetting.image_enhancement_min_image_height)
           .where("original_filename ~* ?", supported_images_regexp.source)
       if exclude_existing
-        uploads =
-          uploads.where(
-            "NOT EXISTS (
-            SELECT 1
-            FROM image_search_data
-            WHERE image_search_data.upload_id = uploads.id
-          )",
-          )
+        if include_partially_analyzed
+          # Only exclude the images that have been fully analyzed
+          # useful when backfilling
+          uploads =
+            uploads.left_outer_joins(:image_search_data).where(
+              "image_search_data.upload_id IS NULL
+                OR image_search_data.ocr_text_search_data IS NULL
+                OR image_search_data.embeddings IS NULL",
+            )
+        else
+          uploads =
+            uploads.left_outer_joins(:image_search_data).where(
+              "image_search_data.upload_id IS NULL
+                OR (
+                  image_search_data.ocr_text_search_data IS NULL
+                  AND image_search_data.embeddings IS NULL
+                )",
+            )
+        end
       end
       if max_retry_times > 0
-        failed_count = PluginStore.get(PLUGIN_NAME, "failed_count") || {}
-        rejected_upload_sha1s = failed_count.select { |_, v| v > max_retry_times }.keys
+        # We need to exclude the images reached max retry times
         uploads =
-          uploads.where(
-            "NOT COALESCE(uploads.original_sha1, uploads.sha1) IN (?)",
-            rejected_upload_sha1s,
-          ) if rejected_upload_sha1s.present?
+          uploads.left_outer_joins(:image_search_data).where(
+            "retry_times is NULL OR retry_times < ?",
+            max_retry_times,
+          )
       end
       uploads = uploads.where.not(id: CustomEmoji.pluck(:upload_id))
       uploads

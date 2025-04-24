@@ -75,7 +75,13 @@ describe DiscourseImageEnhancement::Filter do
     it "can exclude existing uploads" do
       image_upload1.update!(original_sha1: "1234")
       image_upload2.update!(original_sha1: "5678")
-      ImageSearchData.create(sha1: "1234", upload_id: image_upload1.id)
+      ImageSearchData.create(
+        sha1: "1234",
+        upload_id: image_upload1.id,
+        ocr_text: "",
+        ocr_text_search_data: "",
+        embeddings: Array.new(512, 0).to_s,
+      )
       uploads =
         described_class.filter_upload(Upload.where(id: [image_upload1.id, image_upload2.id]))
       expect(uploads).to match_array([image_upload2])
@@ -88,11 +94,13 @@ describe DiscourseImageEnhancement::Filter do
     end
 
     it "can filter uploads by max retry times" do
-      PluginStore.set(
-        "discourse-image-enhancement",
-        "failed_count",
-        { image_upload1.sha1 => 4, image_upload2.sha1 => 2 },
-      )
+      # PluginStore.set(
+      #   "discourse-image-enhancement",
+      #   "failed_count",
+      #   { image_upload1.sha1 => 4, image_upload2.sha1 => 2 },
+      # )
+      ImageSearchData.create(sha1: image_upload1.sha1, upload_id: image_upload1.id, retry_times: 4)
+      ImageSearchData.create(sha1: image_upload2.sha1, upload_id: image_upload2.id, retry_times: 2)
       uploads =
         described_class.filter_upload(Upload.where(id: [image_upload1.id, image_upload2.id]))
       expect(uploads).to match_array([image_upload2])
@@ -171,11 +179,9 @@ describe DiscourseImageEnhancement::Filter do
     end
 
     it "should ignore max_retry_times" do
-      PluginStore.set(
-        "discourse-image-enhancement",
-        "failed_count",
-        { image_upload1.sha1 => 4, image_upload2.sha1 => 100 },
-      )
+      # image_enhancement_max_retry_times_per_image is set to 3
+      image_search_data1.update!(retry_times: 4)
+      image_search_data2.update!(retry_times: 100)
       expect(described_class.image_search_data_need_remove).to match_array([])
     end
   end
@@ -192,9 +198,21 @@ describe DiscourseImageEnhancement::Filter do
     end
 
     it "should exclude existing" do
-      ImageSearchData.create(sha1: image_upload1.sha1, upload_id: image_upload1.id)
+      ImageSearchData.create(
+        sha1: image_upload1.sha1,
+        upload_id: image_upload1.id,
+        ocr_text: "",
+        ocr_text_search_data: "",
+        embeddings: Array.new(512, 0).to_s,
+      )
       expect(described_class.posts_need_analysis).to match_array([post])
-      ImageSearchData.create(sha1: image_upload2.sha1, upload_id: image_upload2.id)
+      ImageSearchData.create(
+        sha1: image_upload2.sha1,
+        upload_id: image_upload2.id,
+        ocr_text: "",
+        ocr_text_search_data: "",
+        embeddings: Array.new(512, 0).to_s,
+      )
       expect(described_class.posts_need_analysis).to match_array([])
       expect(described_class.posts_need_analysis(exclude_existing: false)).to match_array([post])
     end

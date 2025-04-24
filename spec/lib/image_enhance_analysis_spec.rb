@@ -110,9 +110,6 @@ describe DiscourseImageEnhancement::ImageAnalysis do
           ],
         }.to_json,
       )
-      WebMock.stub_request(:post, URI.join(api_endpoint, "text_embedding/")).to_return(
-        body: { embedding: Array.new(512) { rand }, success: true }.to_json,
-      )
     end
     it "can process post" do
       described_class.new.process_post(post)

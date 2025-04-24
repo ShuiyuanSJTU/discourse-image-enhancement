@@ -62,16 +62,19 @@ module ::DiscourseImageEnhancement
         next unless image_result[:success]
         upload_id = sha1_to_upload_id[image_result[:sha1]]
         next if upload_id.blank?
-        save_analyzed_image_data(image_result, Upload.find_by(id: upload_id))
+        upload = Upload.find_by(id: upload_id)
+        next if upload.blank?
+        save_analyzed_image_data(image_result, upload)
       end
 
       if @record_failed
         success_sha1s = result[:images].select { |i| i[:success] }.map { |i| i[:sha1] }
         failed_sha1s = image_info.map { |i| i[:sha1] } - success_sha1s
-        if failed_sha1s.present?
-          failed_count = PluginStore.get(PLUGIN_NAME, "failed_count") || {}
-          failed_sha1s.each { |sha1| failed_count[sha1] = (failed_count[sha1] || 0) + 1 }
-          PluginStore.set(PLUGIN_NAME, "failed_count", failed_count)
+        failed_sha1s.each do |sha1|
+          upload_id = sha1_to_upload_id[sha1]
+          search_data = ImageSearchData.find_or_initialize_by(upload_id: upload_id, sha1: sha1)
+          search_data.retry_times += 1
+          search_data.save!
         end
       end
 
@@ -148,12 +151,13 @@ module ::DiscourseImageEnhancement
         embedding: embedding,
       }
       DB.exec(<<~SQL, params)
-        INSERT INTO image_search_data (upload_id, sha1, ocr_text, ocr_text_search_data, embeddings)
-        VALUES (:upload_id, :sha1, :ocr_text, to_tsvector(:ts_config, :ocr_text_search_data), :embedding)
+        INSERT INTO image_search_data (upload_id, sha1, ocr_text, ocr_text_search_data, embeddings, retry_times)
+        VALUES (:upload_id, :sha1, :ocr_text, to_tsvector(:ts_config, :ocr_text_search_data), :embedding, 0)
         ON CONFLICT (upload_id) DO UPDATE SET
           ocr_text = COALESCE(EXCLUDED.ocr_text, image_search_data.ocr_text),
           ocr_text_search_data = COALESCE(EXCLUDED.ocr_text_search_data, image_search_data.ocr_text_search_data),
-          embeddings = COALESCE(EXCLUDED.embeddings, image_search_data.embeddings)
+          embeddings = COALESCE(EXCLUDED.embeddings, image_search_data.embeddings),
+          retry_times = 0
       SQL
     end
 

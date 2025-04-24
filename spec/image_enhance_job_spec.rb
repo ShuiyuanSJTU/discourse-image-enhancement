@@ -102,24 +102,4 @@ describe ::Jobs::ImageSearchAutoCleanup do
     described_class.new.execute({})
     expect(ImageSearchData.find_by(sha1: "1234")).to eq(nil)
   end
-
-  it "should cleanup orphaned failed_count" do
-    PluginStore.set(
-      "discourse-image-enhancement",
-      "failed_count",
-      { image_upload.sha1 => 4, "5678" => 100 },
-    )
-    image_upload
-    image_search_data.destroy
-    described_class.new.execute({})
-    expect(PluginStore.get("discourse-image-enhancement", "failed_count")).to eq(
-      { image_upload.sha1 => 4 },
-    )
-  end
-
-  it "should cleanup failed_count for already processed images" do
-    PluginStore.set("discourse-image-enhancement", "failed_count", { image_upload.sha1 => 4 })
-    described_class.new.execute({})
-    expect(PluginStore.get("discourse-image-enhancement", "failed_count")).to eq({})
-  end
 end
