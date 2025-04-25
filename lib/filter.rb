@@ -10,6 +10,8 @@ module ::DiscourseImageEnhancement
     end
 
     def self.filter_post(posts)
+      # Filter the posts that need to be analyzed
+      # It does not check the number of images in the posts
       posts =
         posts
           .visible
@@ -45,6 +47,8 @@ module ::DiscourseImageEnhancement
       include_partially_analyzed: false,
       max_retry_times: nil
     )
+      # Filter the uploads that need to be analyzed
+      # It does not check which posts the uploads belong to
       max_retry_times =
         SiteSetting.image_enhancement_max_retry_times_per_image if max_retry_times.nil?
       uploads =
@@ -108,13 +112,31 @@ module ::DiscourseImageEnhancement
 
     def self.uploads_need_analysis(
       exclude_existing: true,
-      max_retry_times: SiteSetting.image_enhancement_max_retry_times_per_image
+      max_retry_times: nil,
+      include_missing_ocr: nil,
+      include_missing_embeddings: nil
     )
-      filter_upload(
-        Upload,
-        exclude_existing: exclude_existing,
-        max_retry_times: max_retry_times,
-      ).joins(:posts).where(posts: { id: filter_post(Post) })
+      max_retry_times =
+        SiteSetting.image_enhancement_max_retry_times_per_image if max_retry_times.nil?
+      include_missing_ocr =
+        SiteSetting.image_enhancement_analyze_ocr_enabled if include_missing_ocr.nil?
+      include_missing_embeddings =
+        SiteSetting.image_enhancement_analyze_embedding_enabled if include_missing_embeddings.nil?
+      uploads =
+        filter_upload(
+          Upload,
+          exclude_existing: exclude_existing,
+          include_partially_analyzed: true,
+          max_retry_times: max_retry_times,
+        ).joins(:posts).where(posts: { id: filter_post(Post) })
+      if exclude_existing
+        # If neither ocr nor embedding is enabled, we don't need to analyze the image
+        conditions = ["0=1"] # default false
+        conditions << "image_search_data.ocr_text_search_data IS NULL" if include_missing_ocr
+        conditions << "image_search_data.embeddings IS NULL" if include_missing_embeddings
+        uploads = uploads.left_outer_joins(:image_search_data).where(conditions.join(" OR "))
+      end
+      uploads
     end
 
     def self.image_search_data_need_remove

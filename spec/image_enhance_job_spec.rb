@@ -42,10 +42,11 @@ describe ::Jobs::ImageSearchAutoBackfill do
     SiteSetting.image_search_enabled = true
     SiteSetting.image_enhancement_max_images_per_post = 3
     SiteSetting.image_enhancement_max_retry_times_per_image = 3
+    SiteSetting.image_enhancement_analyze_embedding_enabled = true
   end
 
-  let(:image_upload1) { Fabricate(:upload) }
-  let(:post) do
+  let!(:image_upload1) { Fabricate(:upload) }
+  let!(:post) do
     Fabricate(
       :post,
       uploads: [image_upload1],
@@ -53,14 +54,21 @@ describe ::Jobs::ImageSearchAutoBackfill do
     )
   end
 
-  it "should invoke process_post" do
-    ::DiscourseImageEnhancement::ImageAnalysis.any_instance.expects(:process_post).with(post).once
+  it "should invoke process_image" do
+    ::DiscourseImageEnhancement::ImageAnalysis
+      .any_instance
+      .expects(:process_image)
+      .with(image_upload1)
+      .once
     described_class.new.execute({})
   end
 
   it "should ignore failed posts" do
-    PluginStore.set("discourse-image-enhancement", "failed_count", { image_upload1.sha1 => 4 })
-    ::DiscourseImageEnhancement::ImageAnalysis.expects(:process_post).never
+    ImageSearchData.create(sha1: image_upload1.sha1, upload_id: image_upload1.id, retry_times: 4)
+    ::DiscourseImageEnhancement::ImageAnalysis.any_instance.expects(:process_image).never
+    described_class.new.execute({})
+    ImageSearchData.update!(retry_times: 2)
+    ::DiscourseImageEnhancement::ImageAnalysis.any_instance.expects(:process_image).once
     described_class.new.execute({})
   end
 end

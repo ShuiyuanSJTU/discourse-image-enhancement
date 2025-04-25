@@ -7,27 +7,29 @@ module Jobs
     def execute(_args)
       return unless SiteSetting.image_enhancement_enabled && SiteSetting.image_search_enabled
       start_time = Time.now
-      failed_post_count = 0
-      while Time.now - start_time < 50.minutes && failed_post_count < 50
-        backfill_posts_id =
+      failed_count = 0
+      while Time.now - start_time < 50.minutes && failed_count < 50
+        backfill_uploads_id =
           ::DiscourseImageEnhancement::Filter
-            .posts_need_analysis
-            .order(id: :desc)
+            .uploads_need_analysis
+            .joins(:posts)
+            .order(posts: { id: :desc })
             .limit(100)
-            .pluck(:id)
-        no_more = backfill_posts_id.count < 100
-        backfill_posts_id.each do |post_id|
+            .pluck("uploads.id")
+        no_more = backfill_uploads_id.count < 100
+        backfill_uploads_id.each do |upload_id|
           break if Time.now - start_time > 50.minutes
+          upload = Upload.find_by(id: upload_id)
           analyzer = ::DiscourseImageEnhancement::ImageAnalysis.new(auto_flag_ocr: false)
-          post = Post.find_by(id: post_id)
-          result = analyzer.process_post(post)
-          failed_post_count += 1 if result.nil?
+          # We use process_image here, which can reuse existing search data
+          result = analyzer.process_image(upload)
+          failed_count += 1 if result.nil?
         end
         # break the while loop, all lefts are failed posts, ignore them
         break if no_more
       end
-      if failed_post_count >= 50
-        Rails.logger.warn("Failed to backfill images for 50 posts in 50 minutes, skipping the rest")
+      if failed_count >= 50
+        Rails.logger.warn("Failed to backfill 50 images in 50 minutes, skipping the rest")
       end
     end
   end

@@ -86,8 +86,9 @@ module ::DiscourseImageEnhancement
       image_info = extract_images(post.uploads)
       return nil if image_info.blank?
       return nil if image_info.length > SiteSetting.image_enhancement_max_images_per_post
-      analyze_images(image_info)
+      result = analyze_images(image_info)
       check_for_flag(post)
+      result
     end
 
     def process_image(upload)
