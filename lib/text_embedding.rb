@@ -2,14 +2,14 @@
 module ::DiscourseImageEnhancement
   class TextEmbedding
     def self.embed_text(text)
-      cache_key = Digest::MD5.hexdigest(text)
+      cache_key = "text_embedding_#{Digest::MD5.hexdigest(text)}"
       Discourse
         .cache
         .fetch(cache_key, expires_in: 5.minutes) do
           body = build_query_body(text)
           base_uri = URI.parse(SiteSetting.image_enhancement_analyze_service_endpoint)
           uri = URI.join(base_uri, "/text_embedding/")
-          headers = build_query_headers(uri, body)
+          headers = build_query_headers(uri)
 
           connection = Faraday.new { |f| f.adapter FinalDestination::FaradayAdapter }
 
@@ -37,12 +37,11 @@ module ::DiscourseImageEnhancement
       MultiJson.dump(body)
     end
 
-    def self.build_query_headers(uri, query_body)
+    def self.build_query_headers(uri)
       {
         "Accept" => "*/*",
         "Connection" => "close",
         "Content-Type" => "application/json",
-        "Content-Length" => query_body.bytesize.to_s,
         "Host" => uri.host,
         "User-Agent" => "Discourse/#{Discourse::VERSION::STRING}",
         "X-Discourse-Instance" => Discourse.base_url,

@@ -2,16 +2,35 @@
 
 module ::DiscourseImageEnhancement
   class ImageSearch
-    def initialize(term, limit: 20, page: 0, ocr: true, embeddings: true, guardian: nil)
+    def initialize(
+      term,
+      image = nil,
+      limit: 20,
+      page: 0,
+      ocr: true,
+      embeddings: true,
+      guardian: nil
+    )
       @term = term
+      @image = image
       @limit = limit
       @page = page
-      @ocr = ocr
-      @embeddings = embeddings
+      @search_ocr = ocr
+      @search_embeddings = embeddings
+      @search_by_image = image.present?
       @has_more = true
       @guardian = guardian || Guardian.new
       @advanced_filter = AdvancedFilter.new
-      @processed_term = @advanced_filter.process_advanced_search!(@term)
+      @processed_term = @term.present? ? @advanced_filter.process_advanced_search!(@term) : ""
+      @target_embed = nil
+    end
+
+    def embed_if_needed
+      if @search_by_image
+        # TODO
+      elsif @search_embeddings
+        @target_embed = TextEmbedding.embed_text(@processed_term)
+      end
     end
 
     def apply_advanced_filters(posts)
@@ -31,7 +50,7 @@ module ::DiscourseImageEnhancement
       # set limit and offset here
       # OCR search is only true or false, do not calculate similarity
       term = @processed_term if term.nil?
-      return nil if term.blank? || !@ocr
+      return nil if term.blank? || !@search_ocr
       # user input will be quoted after to_tsquery, we can safely interpolate it
       @safe_term_tsquery =
         Search.ts_query(term: Search.prepare_data(term, :query), ts_config: Search.ts_config)
@@ -41,9 +60,9 @@ module ::DiscourseImageEnhancement
       images.where("ocr_text_search_data @@ #{@safe_term_tsquery}")
     end
 
-    def search_posts_embedding(term = nil, limit:, offset:)
+    def search_posts_embedding(target_embed = nil, limit:, offset:)
       posts = apply_advanced_filters(Post.visible.public_posts)
-      search_result_images = search_images_embedding(term, limit: limit, offset: offset)
+      search_result_images = search_images_embedding(target_embed, limit: limit, offset: offset)
       image_ids = search_result_images.map(&:upload_id)
       return Post.joins(:uploads).none if image_ids.blank?
       posts
@@ -52,11 +71,11 @@ module ::DiscourseImageEnhancement
         .order(["array_position(ARRAY[?], uploads.id)", image_ids])
     end
 
-    def search_images_embedding(term = nil, limit:, offset:)
-      term = @processed_term if term.nil?
+    def search_images_embedding(target_embed = nil, limit:, offset:)
+      # term = @processed_term if term.nil?
 
-      embedding = TextEmbedding.embed_text(term)
-
+      # embedding = TextEmbedding.embed_text(term)
+      target_embed = @target_embed if target_embed.nil?
       before_query = self.class.hnsw_search_workaround(limit)
 
       builder = DB.build(<<~SQL)
@@ -85,7 +104,7 @@ module ::DiscourseImageEnhancement
       ActiveRecord::Base.transaction do
         DB.exec(before_query) if before_query.present?
         builder.query(
-          query_embedding: embedding,
+          query_embedding: target_embed,
           candidates_limit: limit * 2 + offset,
           limit: limit,
           offset: offset,
@@ -98,10 +117,11 @@ module ::DiscourseImageEnhancement
     end
 
     def execute
+      embed_if_needed
       # results is an array of [post_id, upload_id]
       results =
         begin
-          if @embeddings && @ocr
+          if @search_embeddings && @search_ocr
             limit = (@limit / 2).to_i
             res_embedding =
               search_posts_embedding(limit: limit, offset: @page * limit).pluck(
@@ -112,7 +132,7 @@ module ::DiscourseImageEnhancement
               search_posts_ocr(limit: limit, offset: @page * limit).pluck("posts.id", "uploads.id")
             @has_more = res_embedding.length >= limit || res_ocr.length >= limit
             res_embedding + res_ocr
-          elsif @ocr
+          elsif @search_ocr
             res =
               search_posts_ocr(limit: @limit, offset: @page * @limit).pluck(
                 "posts.id",
@@ -120,7 +140,7 @@ module ::DiscourseImageEnhancement
               )
             @has_more = res.length >= @limit
             res
-          elsif @embeddings
+          elsif @search_embeddings
             res =
               search_posts_embedding(limit: @limit, offset: @page * @limit).pluck(
                 "posts.id",
@@ -138,8 +158,8 @@ module ::DiscourseImageEnhancement
         posts_id,
         uploads_id,
         term: @term,
-        search_ocr: @ocr,
-        search_embeddings: @embeddings,
+        search_ocr: @search_ocr,
+        search_embeddings: @search_embeddings,
         page: @page,
         limit: @limit,
         has_more: @has_more,
