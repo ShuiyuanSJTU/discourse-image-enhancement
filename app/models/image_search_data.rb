@@ -18,6 +18,7 @@ end
 #  ocr_text_search_data :tsvector
 #  upload_id            :integer          not null, primary key
 #  embeddings           :halfvec
+#  retry_times          :integer          default(0), not null
 #
 # Indexes
 #
