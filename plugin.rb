@@ -3,7 +3,7 @@
 # name: discourse-image-enhancement
 # about: An AI-powered plugin for Discourse that provides image analysis and search.
 # meta_topic_id: TODO
-# version: 0.1.1
+# version: 0.2.0
 # authors: pangbo
 # url: https://github.com/ShuiyuanSJTU/discourse-image-enhancement
 # required_version: 2.7.0
