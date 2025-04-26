@@ -5,6 +5,7 @@ import Topic from "discourse/models/topic";
 
 export default class extends Component {
   @service router;
+
   constructor() {
     super(...arguments);
     this.topic = Topic.create(this.args.resultEntry.topic);
