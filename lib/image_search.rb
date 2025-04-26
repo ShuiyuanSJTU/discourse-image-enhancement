@@ -27,7 +27,7 @@ module ::DiscourseImageEnhancement
 
     def embed_if_needed
       if @search_by_image
-        # TODO
+        @target_embed = ImageEmbedding.embed_image(@image)
       elsif @search_embeddings
         @target_embed = TextEmbedding.embed_text(@processed_term)
       end
