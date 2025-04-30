@@ -29,11 +29,12 @@ module ::DiscourseImageEnhancement
       image_data = File.binread(uploaded_file.tempfile.path)
       base64_image = Base64.strict_encode64(image_data)
       data_uri = "data:#{uploaded_file.content_type};base64,#{base64_image}"
-      body = JSON.dump({ image: data_uri })
+      body = { image: data_uri }
       headers = build_request_headers(uri)
 
       connection =
         Faraday.new do |f|
+          f.request :json
           f.adapter FinalDestination::FaradayAdapter
           f.options.timeout = 30
           f.options.open_timeout = 30

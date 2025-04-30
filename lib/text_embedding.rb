@@ -11,11 +11,12 @@ module ::DiscourseImageEnhancement
     def self.perform_embedding_request(text)
       base_uri = URI.parse(SiteSetting.image_enhancement_analyze_service_endpoint)
       uri = URI.join(base_uri, "/text_embedding/")
-      body = JSON.dump({ text: text })
+      body = { text: text }
       headers = build_query_headers(uri)
 
       connection =
         Faraday.new do |f|
+          f.request :json
           f.adapter FinalDestination::FaradayAdapter
           f.options.timeout = 30
           f.options.open_timeout = 30
