@@ -25,8 +25,13 @@ class ImageEnhancementController < ::ApplicationController
       uploaded_image = nil
       term = params.require(:term)
     end
-    ocr = params.fetch(:ocr, "true") == "true"
-    embeddings = params.fetch(:embed, "true") == "true"
+    if uploaded_image.present?
+      ocr = false
+      embeddings = false
+    else
+      ocr = params.fetch(:ocr, "true") == "true"
+      embeddings = params.fetch(:embed, "true") == "true"
+    end
     page = params.fetch(:page, 0).to_i
     saerch_results =
       ::DiscourseImageEnhancement::ImageSearch.new(
@@ -34,6 +39,7 @@ class ImageEnhancementController < ::ApplicationController
         uploaded_image,
         ocr: ocr,
         embeddings: embeddings,
+        by_image: uploaded_image.present?,
         page: page,
         guardian: Guardian.new(current_user),
       ).execute

@@ -53,7 +53,7 @@ export default class extends Controller {
       const formData = new FormData();
       formData.append("image", this.get("q_image"));
       formData.append("page", this.get("page"));
-      formData.append("q", this.get("q"));
+      formData.append("term", this.get("q"));
       return ajax("/image-search/search.json", {
         type: "POST",
         processData: false,

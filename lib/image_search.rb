@@ -9,6 +9,7 @@ module ::DiscourseImageEnhancement
       page: 0,
       ocr: true,
       embeddings: true,
+      by_image: false,
       guardian: nil
     )
       @term = term
@@ -17,15 +18,29 @@ module ::DiscourseImageEnhancement
       @page = page
       @search_ocr = ocr
       @search_embeddings = embeddings
-      @search_by_image = image.present?
+      @search_by_image = by_image
       @has_more = true
       @guardian = guardian || Guardian.new
       @advanced_filter = AdvancedFilter.new
+
+      # call process_advanced_search! to register the advanced filters
+      # and remove the advanced filters from the term
       @processed_term = @term.present? ? @advanced_filter.process_advanced_search!(@term) : ""
       @target_embed = nil
+
+      if @search_by_image
+        if @search_ocr || @search_embeddings
+          Rails.logger.warn(
+            "search_by_image is not compatible with search_ocr or search_embeddings",
+          )
+          @search_ocr = false
+          @search_embeddings = false
+        end
+      end
     end
 
-    def embed_if_needed
+    def embed_search_target
+      return @target_embed if @target_embed
       if @search_by_image
         @target_embed = ImageEmbedding.embed_image(@image)
       elsif @search_embeddings
@@ -61,6 +76,13 @@ module ::DiscourseImageEnhancement
     end
 
     def search_posts_embedding(target_embed = nil, limit:, offset:)
+      # For search-by-image or search-by-content, if no target_embed is provided,
+      # we will use the embed_search_target method to get the target_embed
+      # This function first filter out candidate images, and then search for posts
+      # that contain those images
+      # The `limit` and `offset` are applied to the images result, not the posts result
+      # So there may be more posts in the result than the `limit`
+
       posts = apply_advanced_filters(Post.visible.public_posts)
       search_result_images = search_images_embedding(target_embed, limit: limit, offset: offset)
       image_ids = search_result_images.map(&:upload_id)
@@ -72,10 +94,7 @@ module ::DiscourseImageEnhancement
     end
 
     def search_images_embedding(target_embed = nil, limit:, offset:)
-      # term = @processed_term if term.nil?
-
-      # embedding = TextEmbedding.embed_text(term)
-      target_embed = @target_embed if target_embed.nil?
+      target_embed = embed_search_target if target_embed.nil?
       before_query = self.class.hnsw_search_workaround(limit)
 
       builder = DB.build(<<~SQL)
@@ -117,7 +136,6 @@ module ::DiscourseImageEnhancement
     end
 
     def execute
-      embed_if_needed
       # results is an array of [post_id, upload_id]
       results =
         begin
@@ -140,7 +158,7 @@ module ::DiscourseImageEnhancement
               )
             @has_more = res.length >= @limit
             res
-          elsif @search_embeddings
+          elsif @search_embeddings || @search_by_image
             res =
               search_posts_embedding(limit: @limit, offset: @page * @limit).pluck(
                 "posts.id",
@@ -158,8 +176,10 @@ module ::DiscourseImageEnhancement
         posts_id,
         uploads_id,
         term: @term,
+        processed_term: @processed_term,
         search_ocr: @search_ocr,
         search_embeddings: @search_embeddings,
+        search_by_image: @search_by_image,
         page: @page,
         limit: @limit,
         has_more: @has_more,

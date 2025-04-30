@@ -91,6 +91,51 @@ class DiscourseImageEnhancement::ImageSearch
       posts.where(id: Post.joins({ topic: :tags }).where(tags: { id: tags }))
     end
 
+    advanced_filter(/\Acategor(?:y|ies):(.+)\z/i) do |posts, terms|
+      category_ids = []
+
+      matches =
+        terms
+          .split(",")
+          .map do |term|
+            if term[0] == "="
+              [term[1..-1], true]
+            else
+              [term, false]
+            end
+          end
+          .to_h
+
+      if matches.present?
+        sql = <<~SQL
+        SELECT c.id, term
+        FROM
+            categories c
+        JOIN
+            unnest(ARRAY[:matches]) AS term ON
+            c.slug ILIKE term OR
+            c.name ILIKE term OR
+            (term ~ '^[0-9]{1,10}$' AND c.id = term::int)
+        SQL
+
+        found = DB.query(sql, matches: matches.keys)
+
+        if found.present?
+          found.each do |row|
+            category_ids << row.id
+            @category_filter_matched ||= true
+            category_ids += Category.subcategory_ids(row.id) if !matches[row.term]
+          end
+        end
+      end
+
+      if category_ids.present?
+        posts.where("topics.category_id IN (?)", category_ids.uniq)
+      else
+        posts.where("1 = 0")
+      end
+    end
+
     advanced_filter(/\A\#([\p{L}\p{M}0-9\-:=]+)\z/i) do |posts, match|
       category_slug, subcategory_slug = match.to_s.split(":")
       next unless category_slug
