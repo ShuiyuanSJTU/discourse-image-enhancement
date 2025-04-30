@@ -5,14 +5,21 @@
     </h1>
     <p> {{i18n "image_search.description"}} </p>
     <div class="search-bar">
-      <SearchTextField
-        @value={{this.searchTerm}}
-        @aria-label={{i18n "search.search_term_label"}}
-        @enter={{action "search" (hash collapseFilters=true)}}
-        @hasAutofocus={{this.hasAutofocus}}
-        @aria-controls="search-result-count"
-        class="full-page-search search no-blur search-query"
-      />
+      {{#if this.displaySearchTextField}}
+        <SearchTextField
+          @value={{this.searchTerm}}
+          @aria-label={{i18n "search.search_term_label"}}
+          @enter={{action "search" (hash collapseFilters=true)}}
+          @aria-controls="search-result-count"
+          class="full-page-search search no-blur search-query"
+        />
+      {{/if}}
+      {{#if this.displayImageUploader}}
+        <LocalImageUploader
+          @id="search-image-uploader"
+          @onFileSelected={{this.onFileSelected}}
+        />
+      {{/if}}
       <ComboBox
         @id="search-type"
         @value={{this.search_type}}

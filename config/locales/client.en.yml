@@ -7,6 +7,7 @@ en:
         ocr_and_embed: "Comprehensive"
         ocr_only: "Image Text"
         embed_only: "Image Content"
+        by_image: "Search by Image"
     search:
       type:
         images: "Images"

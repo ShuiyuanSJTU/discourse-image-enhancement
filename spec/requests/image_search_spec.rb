@@ -29,7 +29,8 @@ describe ::ImageEnhancementController do
 
     it "should invoke ImageSearch" do
       ::DiscourseImageEnhancement::ImageSearch.expects(:new).with(
-        "term", nil,
+        "term",
+        nil,
         has_entries(ocr: false, embeddings: true),
       )
       get "/image-search/search.json", params: { term: "term", ocr: "false" }

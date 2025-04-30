@@ -7,6 +7,7 @@ zh_CN:
         ocr_and_embed: "综合"
         ocr_only: "图片文字"
         embed_only: "图片内容"
+        by_image: "以图搜图"
     search:
       type:
         images: "图片"

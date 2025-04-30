@@ -11,6 +11,7 @@ export default class extends Controller {
   noMoreResults = false;
   searchActivated = false;
   searchTerm = "";
+  searchImage = null;
   page = 0;
   searchResults = {};
   searchResultEntries = [];
@@ -19,6 +20,7 @@ export default class extends Controller {
   expandFilters = false;
   queryParams = ["q", "search_type"];
   q = undefined;
+  q_image = undefined;
 
   searchTypes = [
     {
@@ -33,6 +35,10 @@ export default class extends Controller {
       name: i18n("image_search.search_type.ocr_and_embed"),
       id: "image_search_ocr_and_embed",
     },
+    {
+      name: i18n("image_search.search_type.by_image"),
+      id: "image_search_by_image",
+    },
   ];
 
   search_type = this.searchTypes[0].id;
@@ -42,24 +48,48 @@ export default class extends Controller {
   }
 
   _search() {
-    const searchData = {};
-    searchData.term = this.get("q");
-    searchData.page = this.get("page");
-    switch (this.get("search_type")) {
-      case "image_search_ocr_and_embed":
-        searchData.ocr = true;
-        searchData.embed = true;
-        break;
-      case "image_search_ocr":
-        searchData.ocr = true;
-        searchData.embed = false;
-        break;
-      case "image_search_embed":
-        searchData.ocr = false;
-        searchData.embed = true;
-        break;
+    const searchType = this.get("search_type");
+    if (searchType === "image_search_by_image") {
+      const formData = new FormData();
+      formData.append("image", this.get("q_image"));
+      formData.append("page", this.get("page"));
+      formData.append("q", this.get("q"));
+      return ajax("/image-search/search.json", {
+        type: "POST",
+        processData: false,
+        contentType: false,
+        data: formData,
+      });
+    } else {
+      const searchData = {};
+      searchData.term = this.get("q");
+      searchData.page = this.get("page");
+      switch (this.get("search_type")) {
+        case "image_search_ocr_and_embed":
+          searchData.ocr = true;
+          searchData.embed = true;
+          break;
+        case "image_search_ocr":
+          searchData.ocr = true;
+          searchData.embed = false;
+          break;
+        case "image_search_embed":
+          searchData.ocr = false;
+          searchData.embed = true;
+          break;
+      }
+      return ajax("/image-search/search.json", { data: searchData });
     }
-    return ajax("/image-search/search.json", { data: searchData });
+  }
+
+  @discourseComputed("search_type")
+  displaySearchTextField() {
+    return this.get("search_type") !== "image_search_by_image";
+  }
+
+  @discourseComputed("search_type")
+  displayImageUploader() {
+    return this.get("search_type") === "image_search_by_image";
   }
 
   @discourseComputed("searching", "searchResultEntries")
@@ -93,7 +123,7 @@ export default class extends Controller {
 
   @action
   search() {
-    if (this.searchTerm.length < 2) {
+    if (!this.get("searchImage") && this.get("searchTerm").length < 2) {
       this.set("invalidSearch", true);
       return;
     }
@@ -102,6 +132,7 @@ export default class extends Controller {
     this.resetSearch();
     this.set("searching", true);
     this.set("q", this.searchTerm);
+    this.set("q_image", this.searchImage);
     this._search().then((result) => {
       this.set(
         "searchResultEntries",
@@ -143,5 +174,26 @@ export default class extends Controller {
       }
       this.set("loadingMore", false);
     });
+  }
+
+  @action
+  onFileSelected(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = 224;
+        canvas.height = 224;
+        ctx.drawImage(img, 0, 0, 224, 224);
+
+        canvas.toBlob((blob) => {
+          this.set("searchImage", blob);
+        }, "image/jpeg");
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
   }
 }
