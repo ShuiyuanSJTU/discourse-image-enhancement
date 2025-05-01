@@ -14,7 +14,7 @@ import lightbox from "discourse/lib/lightbox";
 import { bindFileInputChangeListener } from "discourse/lib/uploads";
 import { i18n } from "discourse-i18n";
 
-// Args: id, imageUrl, placeholderUrl, onFileSelected, disabled
+// Args: id, imageUrl, placeholderUrl, onFileSelected, onFileDeleted, disabled
 export default class LocalImageUploader extends Component {
   @service currentUser;
   @service siteSettings;
@@ -114,11 +114,27 @@ export default class LocalImageUploader extends Component {
     }
   }
 
+  @action
+  handleFileDrop(event) {
+    event.preventDefault();
+    const file = event.dataTransfer.files[0];
+    if (file) {
+      this.handleSelectedFile(file);
+    }
+  }
+
+  @action
+  preventDefault(event) {
+    event.preventDefault();
+  }
+
   <template>
     <div
       id={{@id}}
       class="image-uploader {{if this.imagePreviewUrl 'has-image' 'no-image'}}"
       ...attributes
+      {{on "dragover" this.preventDefault}}
+      {{on "drop" this.handleFileDrop}}
     >
       <div
         class="uploaded-image-preview input-xxlarge"
