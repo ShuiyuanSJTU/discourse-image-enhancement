@@ -27,13 +27,39 @@ describe ::ImageEnhancementController do
       expect(response.status).to eq(400)
     end
 
-    it "should invoke ImageSearch" do
+    it "should invoke ImageSearch when get" do
       ::DiscourseImageEnhancement::ImageSearch.expects(:new).with(
         "term",
         nil,
         has_entries(ocr: false, embeddings: true),
       )
       get "/image-search/search.json", params: { term: "term", ocr: "false" }
+    end
+
+    it "should invoke ImageSearch when post" do
+      ::DiscourseImageEnhancement::ImageSearch.expects(:new).with(
+        "term",
+        nil,
+        has_entries(ocr: false, embeddings: true),
+      )
+      post "/image-search/search.json", params: { term: "term", ocr: "false" }
+    end
+
+    it "could search by image" do
+      file = Rack::Test::UploadedFile.new(file_from_fixtures("logo.png"))
+      file.content_type = "image/png"
+      ::DiscourseImageEnhancement::ImageSearch.expects(:new).with(
+        "",
+        instance_of(ActionDispatch::Http::UploadedFile),
+        has_entries(ocr: false, embeddings: false, by_image: true),
+      )
+      post "/image-search/search.json",
+           params: {
+             term: "",
+             image: file,
+             ocr: "false",
+             embed: "false",
+           }
     end
   end
 end

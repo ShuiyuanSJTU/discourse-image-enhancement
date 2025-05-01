@@ -44,7 +44,7 @@ describe DiscourseImageEnhancement::ImageSearch do
     end
 
     it "searches using embeddings only" do
-      SiteSetting.image_enhancement_embedding_similarity_threshold = 0
+      SiteSetting.image_enhancement_text_embedding_similarity_threshold = 0
       search = described_class.new("car", ocr: false, embeddings: true)
       allow(DiscourseImageEnhancement::TextEmbedding).to receive(:embed_text).and_return(
         JSON.parse(image_search_data1.embeddings),
@@ -58,6 +58,19 @@ describe DiscourseImageEnhancement::ImageSearch do
     it "searches using both OCR and embeddings" do
       search = described_class.new("plane", ocr: true, embeddings: true)
       allow(DiscourseImageEnhancement::TextEmbedding).to receive(:embed_text).and_return(
+        JSON.parse(image_search_data1.embeddings),
+      )
+      result = search.execute
+      expect(result.grouped_results.map(&:image).map(&:id)).to include(image_upload1.id)
+      expect(result.grouped_results.map(&:image).map(&:id)).to include(image_upload2.id)
+      expect(result.grouped_results.length).to eq(2)
+    end
+
+    it "searches by image" do
+      SiteSetting.image_enhancement_image_embedding_similarity_threshold = 0
+      file = Rack::Test::UploadedFile.new(file_from_fixtures("logo.png"))
+      search = described_class.new(nil, file, ocr: false, embeddings: false, by_image: true)
+      allow(DiscourseImageEnhancement::ImageEmbedding).to receive(:embed_image).and_return(
         JSON.parse(image_search_data1.embeddings),
       )
       result = search.execute
