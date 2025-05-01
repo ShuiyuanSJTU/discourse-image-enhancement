@@ -68,7 +68,7 @@ export default class LocalImageUploader extends Component {
 
   @action
   handleSelectedFile(file) {
-    if (file) {
+    if (file && file.type.startsWith("image/")) {
       this.imagePreviewUrl = URL.createObjectURL(file);
       this.imageFilename = file.name;
       const img = new Image();
