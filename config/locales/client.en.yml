@@ -8,6 +8,8 @@ en:
         ocr_only: "Image Text"
         embed_only: "Image Content"
         by_image: "Search by Image"
+        invalid:
+          no_image: "Please select an image."
     search:
       type:
         images: "Images"

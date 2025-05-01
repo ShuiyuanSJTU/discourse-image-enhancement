@@ -83,6 +83,16 @@ export default class LocalImageUploader extends Component {
   }
 
   @action
+  handleDeletedFile() {
+    this.imagePreviewUrl = null;
+    this.imageFilename = null;
+    this.imageWidth = null;
+    this.imageHeight = null;
+
+    this.args.onFileDeleted();
+  }
+
+  @action
   toggleLightbox() {
     const lightboxElement = document.querySelector(
       `#${this.args.id} a.lightbox`
@@ -142,6 +152,11 @@ export default class LocalImageUploader extends Component {
               @icon="discourse-expand"
               @title="expand"
               class="btn-default btn-small image-uploader-lightbox-btn"
+            />
+            <DButton
+              @action={{this.handleDeletedFile}}
+              @icon="trash-can"
+              class="btn-danger btn-small"
             />
           </div>
         {{else}}

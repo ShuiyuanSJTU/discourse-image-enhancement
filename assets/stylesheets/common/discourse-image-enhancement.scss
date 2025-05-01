@@ -127,11 +127,18 @@ div.img-search-result-entries {
       color: var(--primary);
       display: -webkit-box;
       -webkit-line-clamp: 3;
+      line-clamp: 3;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
   }
 }
+
 h3.image-search-no-results {
   margin: 20px;
+}
+
+#search-image-uploader .uploaded-image-preview {
+  margin: 0px;
+  background-position: center;
 }

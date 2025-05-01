@@ -6,7 +6,7 @@ export default class extends Route {
   setupController(controller) {
     if (controller.q) {
       controller.set("searchTerm", controller.q);
-      controller.search();
     }
+    controller.onPageLoad();
   }
 }

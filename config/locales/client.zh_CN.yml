@@ -8,6 +8,8 @@ zh_CN:
         ocr_only: "图片文字"
         embed_only: "图片内容"
         by_image: "以图搜图"
+      invalid:
+        no_image: "请选择图片。"
     search:
       type:
         images: "图片"

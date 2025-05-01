@@ -18,18 +18,20 @@
         <LocalImageUploader
           @id="search-image-uploader"
           @onFileSelected={{this.onFileSelected}}
+          @onFileDeleted={{this.onFileSelected}}
+          class="full-page-search search search-by-image"
         />
       {{/if}}
       <ComboBox
         @id="search-type"
         @value={{this.search_type}}
         @content={{this.searchTypes}}
-        @onChange={{fn (mut this.search_type)}}
+        @onChange={{this.onSearchTypeChange}}
         @options={{hash castInteger=true}}
       />
       <DButton
         @action={{fn (action "search") (hash collapseFilters=true)}}
-        @icon="search"
+        @icon="magnifying-glass"
         @label="search.search_button"
         @ariaLabel="search.search_button"
         @disabled={{this.searchButtonDisabled}}
@@ -50,7 +52,7 @@
     <div class="search-notice">
       {{#if this.invalidSearch}}
         <div class="fps-invalid">
-          {{i18n "search.too_short"}}
+          {{this.invalidSearchReason}}
         </div>
       {{/if}}
     </div>
@@ -62,7 +64,7 @@
   </div>
 
   {{#unless (or this.hasResults this.searching)}}
-    {{#if this.searchActive}}
+    {{#if this.searchActivated}}
       <h3 class="image-search-no-results">{{i18n "search.no_results"}}</h3>
     {{/if}}
   {{/unless}}

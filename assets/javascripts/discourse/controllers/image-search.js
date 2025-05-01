@@ -1,6 +1,5 @@
 import Controller from "@ember/controller";
 import { action } from "@ember/object";
-import { observes } from "@ember-decorators/object";
 import { ajax } from "discourse/lib/ajax";
 import discourseComputed from "discourse/lib/decorators";
 import { i18n } from "discourse-i18n";
@@ -10,6 +9,8 @@ export default class extends Controller {
   loadingMore = false;
   noMoreResults = false;
   searchActivated = false;
+  invalidSearch = false;
+  invalidSearchReason = "";
   searchTerm = "";
   searchImage = null;
   page = 0;
@@ -105,31 +106,42 @@ export default class extends Controller {
     return this.get("searchResultEntries").length > 0;
   }
 
-  resetSearch() {
+  resetSearchResult() {
     this.set("page", 0);
     this.set("searchResultEntries", []);
     this.set("searchResultEntriesCount", 0);
     this.set("loadingMore", false);
     this.set("noMoreResults", false);
+    this.set("invalidSearch", false);
   }
 
-  @observes("search_type")
-  triggerSearchOnTypeChange() {
-    if (this.searchActivated) {
-      this.resetSearch();
+  onPageLoad() {
+    // Automatically trigger search when possible
+    if (this.get("search_type") === "image_search_by_image") {
+      return;
+    } else if (this.get("searchTerm")) {
       this.search();
     }
   }
 
   @action
   search() {
-    if (!this.get("searchImage") && this.get("searchTerm").length < 2) {
-      this.set("invalidSearch", true);
-      return;
+    if (this.get("search_type") === "image_search_by_image") {
+      if (this.get("searchImage") === null) {
+        this.set("invalidSearch", true);
+        this.set("invalidSearchReason", i18n("image_search.invalid.no_image"));
+        return;
+      }
+    } else {
+      if (this.get("searchTerm").length < 2) {
+        this.set("invalidSearch", true);
+        this.set("invalidSearchReason", i18n("search.too_short"));
+        return;
+      }
     }
     this.set("searchActivated", true);
     this.set("invalidSearch", false);
-    this.resetSearch();
+    this.resetSearchResult();
     this.set("searching", true);
     this.set("q", this.searchTerm);
     this.set("q_image", this.searchImage);
@@ -177,7 +189,32 @@ export default class extends Controller {
   }
 
   @action
+  onSearchTypeChange(searchType) {
+    const prevType = this.get("search_type");
+    this.set("search_type", searchType);
+    this.resetSearchResult();
+    if (
+      prevType === "image_search_by_image" ||
+      searchType === "image_search_by_image"
+    ) {
+      // Cleanup image when switching from or to by image
+      this.set("searchActivated", false);
+      this.set("searchImage", null);
+      this.set("q_image", null);
+    } else {
+      // Automatically trigger search when switching between text searchs
+      if (this.get("searchActivated")) {
+        this.search();
+      }
+    }
+  }
+
+  @action
   onFileSelected(file) {
+    if (!file) {
+      this.set("searchImage", null);
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
