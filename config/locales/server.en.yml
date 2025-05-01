@@ -15,4 +15,5 @@ en:
     image_enhancement_analyze_service_key: "Image analysis service key"
     image_enhancement_analyze_ocr_enabled: "Enable OCR analysis"
     image_enhancement_analyze_embedding_enabled: "Enable image embedding analysis"
-    image_enhancement_embedding_similarity_threshold: "Image embedding similarity threshold"
+    image_enhancement_text_embedding_similarity_threshold: "Text embedding similarity threshold"
+    image_enhancement_image_embedding_similarity_threshold: "Image embedding similarity threshold"

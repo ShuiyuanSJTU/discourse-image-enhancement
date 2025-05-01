@@ -15,4 +15,5 @@ zh_CN:
     image_enhancement_analyze_service_key: "图片分析服务密钥"
     image_enhancement_analyze_ocr_enabled: "是否启用OCR分析"
     image_enhancement_analyze_embedding_enabled: "是否启用图片嵌入分析"
-    image_enhancement_embedding_similarity_threshold: "图片嵌入相似度阈值"
+    image_enhancement_text_embedding_similarity_threshold: "文字嵌入相似度阈值"
+    image_enhancement_image_embedding_similarity_threshold: "图片嵌入相似度阈值"

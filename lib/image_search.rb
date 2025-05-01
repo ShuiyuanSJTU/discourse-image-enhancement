@@ -12,14 +12,13 @@ module ::DiscourseImageEnhancement
       by_image: false,
       guardian: nil
     )
-      @term = term
+      @term = term.to_s
       @image = image
       @limit = limit
       @page = page
       @search_ocr = ocr
       @search_embeddings = embeddings
       @search_by_image = by_image
-      @has_more = true
       @guardian = guardian || Guardian.new
       @advanced_filter = AdvancedFilter.new
 
@@ -75,7 +74,7 @@ module ::DiscourseImageEnhancement
       images.where("ocr_text_search_data @@ #{@safe_term_tsquery}")
     end
 
-    def search_posts_embedding(target_embed = nil, limit:, offset:)
+    def search_posts_embedding(target_embed = nil, limit:, offset:, threshold: 0)
       # For search-by-image or search-by-content, if no target_embed is provided,
       # we will use the embed_search_target method to get the target_embed
       # This function first filter out candidate images, and then search for posts
@@ -84,7 +83,8 @@ module ::DiscourseImageEnhancement
       # So there may be more posts in the result than the `limit`
 
       posts = apply_advanced_filters(Post.visible.public_posts)
-      search_result_images = search_images_embedding(target_embed, limit: limit, offset: offset)
+      search_result_images =
+        search_images_embedding(target_embed, limit: limit, offset: offset, threshold: threshold)
       image_ids = search_result_images.map(&:upload_id)
       return Post.joins(:uploads).none if image_ids.blank?
       posts
@@ -93,7 +93,7 @@ module ::DiscourseImageEnhancement
         .order(["array_position(ARRAY[?], uploads.id)", image_ids])
     end
 
-    def search_images_embedding(target_embed = nil, limit:, offset:)
+    def search_images_embedding(target_embed = nil, limit:, offset:, threshold: 0)
       target_embed = embed_search_target if target_embed.nil?
       before_query = self.class.hnsw_search_workaround(limit)
 
@@ -127,7 +127,7 @@ module ::DiscourseImageEnhancement
           candidates_limit: limit * 2 + offset,
           limit: limit,
           offset: offset,
-          threshold: SiteSetting.image_enhancement_embedding_similarity_threshold,
+          threshold: threshold,
         )
       end
     rescue PG::Error => e
@@ -137,39 +137,45 @@ module ::DiscourseImageEnhancement
 
     def execute
       # results is an array of [post_id, upload_id]
-      results =
-        begin
-          if @search_embeddings && @search_ocr
-            limit = (@limit / 2).to_i
-            res_embedding =
-              search_posts_embedding(limit: limit, offset: @page * limit).pluck(
-                "posts.id",
-                "uploads.id",
-              )
-            res_ocr =
-              search_posts_ocr(limit: limit, offset: @page * limit).pluck("posts.id", "uploads.id")
-            @has_more = res_embedding.length >= limit || res_ocr.length >= limit
-            res_embedding + res_ocr
-          elsif @search_ocr
-            res =
-              search_posts_ocr(limit: @limit, offset: @page * @limit).pluck(
-                "posts.id",
-                "uploads.id",
-              )
-            @has_more = res.length >= @limit
-            res
-          elsif @search_embeddings || @search_by_image
-            res =
-              search_posts_embedding(limit: @limit, offset: @page * @limit).pluck(
-                "posts.id",
-                "uploads.id",
-              )
-            @has_more = res.length >= @limit
-            res
-          else
-            []
-          end
-        end
+
+      if @search_embeddings && @search_ocr
+        limit = (@limit / 2).to_i
+        res_embedding =
+          search_posts_embedding(
+            limit: limit,
+            offset: @page * limit,
+            threshold: SiteSetting.image_enhancement_text_embedding_similarity_threshold,
+          ).pluck("posts.id", "uploads.id")
+        res_ocr =
+          search_posts_ocr(limit: limit, offset: @page * limit).pluck("posts.id", "uploads.id")
+        has_more = res_embedding.length >= limit || res_ocr.length >= limit
+        # sort by post id descending
+        results = (res_embedding + res_ocr).sort_by(&:first).reverse
+      elsif @search_ocr
+        results =
+          search_posts_ocr(limit: @limit, offset: @page * @limit).pluck("posts.id", "uploads.id")
+        has_more = results.length >= @limit
+      elsif @search_embeddings || @search_by_image
+        threshold =
+          (
+            if @search_by_image
+              SiteSetting.image_enhancement_image_embedding_similarity_threshold
+            elsif @search_embeddings
+              SiteSetting.image_enhancement_text_embedding_similarity_threshold
+            else
+              nil
+            end
+          )
+        results =
+          search_posts_embedding(limit: @limit, offset: @page * @limit, threshold: threshold).pluck(
+            "posts.id",
+            "uploads.id",
+          )
+        has_more = results.length >= @limit
+      else
+        results = []
+        has_more = false
+      end
 
       posts_id, uploads_id = results.uniq.transpose
       ImageSearchResult.new(
@@ -182,7 +188,7 @@ module ::DiscourseImageEnhancement
         search_by_image: @search_by_image,
         page: @page,
         limit: @limit,
-        has_more: @has_more,
+        has_more: has_more,
       )
     end
 

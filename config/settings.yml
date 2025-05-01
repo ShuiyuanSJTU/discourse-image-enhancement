@@ -47,6 +47,9 @@ plugins:
   image_enhancement_analyze_embedding_enabled:
     default: false
     client: false
-  image_enhancement_embedding_similarity_threshold:
+  image_enhancement_text_embedding_similarity_threshold:
     default: 0.4
+    client: false
+  image_enhancement_image_embedding_similarity_threshold:
+    default: 0.8
     client: false
