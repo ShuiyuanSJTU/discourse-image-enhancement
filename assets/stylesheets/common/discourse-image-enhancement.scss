@@ -108,6 +108,7 @@ div.img-search-result-entries {
       overflow: hidden;
       display: -webkit-box;
       -webkit-line-clamp: 2;
+      line-clamp: 2;
       -webkit-box-orient: vertical;
       font-size: var(--font-0-rem);
     }
@@ -138,7 +139,11 @@ h3.image-search-no-results {
   margin: 20px;
 }
 
-#search-image-uploader .uploaded-image-preview {
-  margin: 0px;
-  background-position: center;
+#search-image-uploader {
+  flex-basis: 50%;
+  .uploaded-image-preview {
+    margin: 0px;
+    padding: 0px;
+    background-position: center;
+  }
 }
