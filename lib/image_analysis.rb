@@ -83,7 +83,8 @@ module ::DiscourseImageEnhancement
 
     def process_post(post)
       return nil unless should_analyze_post(post)
-      image_info = extract_images(post.uploads)
+      image_info =
+        extract_images(Filter.filter_upload(post.uploads, include_partially_analyzed: true))
       return nil if image_info.blank?
       return nil if image_info.length > SiteSetting.image_enhancement_max_images_per_post
       result = analyze_images(image_info)
@@ -177,13 +178,10 @@ module ::DiscourseImageEnhancement
     end
 
     def extract_images(uploads)
-      # TODO: deal with @force
-      Filter
-        .filter_upload(uploads)
-        .map do |u|
-          url = extract_image_url(u)
-          { id: u.id, sha1: u.original_sha1 || u.sha1, url: url }
-        end
+      uploads.map do |u|
+        url = extract_image_url(u)
+        { id: u.id, sha1: u.original_sha1 || u.sha1, url: url }
+      end
     end
 
     def extract_image_url(upload)
