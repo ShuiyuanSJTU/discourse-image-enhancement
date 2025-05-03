@@ -37,12 +37,18 @@ module ::DiscourseImageEnhancement
     def analyze_images(image_info)
       return nil if image_info.blank?
       return nil if !@analyze_ocr && !@analyze_embedding
-      body = build_query_body(image_info)
       base_uri = URI.parse(SiteSetting.image_enhancement_analyze_service_endpoint)
       uri = URI.join(base_uri, "/analyze/")
-      headers = build_query_headers(uri, body)
+      headers = build_query_headers(uri)
+      body = build_query_body(image_info)
 
-      connection = Faraday.new { |f| f.adapter FinalDestination::FaradayAdapter }
+      connection =
+        Faraday.new do |f|
+          f.request :json
+          f.adapter FinalDestination::FaradayAdapter
+          f.options.timeout = 30
+          f.options.open_timeout = 30
+        end
 
       begin
         response = connection.post(uri, body, headers)
@@ -195,20 +201,11 @@ module ::DiscourseImageEnhancement
     end
 
     def build_query_body(images)
-      body = {}
-      body[:images] = images
-      body[:ocr] = @analyze_ocr
-      body[:embedding] = @analyze_embedding
-      MultiJson.dump(body)
+      { "images" => images, "ocr" => @analyze_ocr, "embedding" => @analyze_embedding }
     end
 
-    def build_query_headers(uri, query_body)
+    def build_query_headers(uri)
       {
-        "Accept" => "*/*",
-        "Connection" => "close",
-        "Content-Type" => "application/json",
-        "Content-Length" => query_body.bytesize.to_s,
-        "Host" => uri.host,
         "User-Agent" => "Discourse/#{Discourse::VERSION::STRING}",
         "X-Discourse-Instance" => Discourse.base_url,
         "api-key" => SiteSetting.image_enhancement_analyze_service_key,

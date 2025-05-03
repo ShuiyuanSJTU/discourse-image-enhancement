@@ -41,9 +41,9 @@ module ::DiscourseImageEnhancement
     def embed_search_target
       return @target_embed if @target_embed
       if @search_by_image
-        @target_embed = ImageEmbedding.embed_image(@image)
+        @target_embed = Embedding.embed(@image, type: :image)
       elsif @search_embeddings
-        @target_embed = TextEmbedding.embed_text(@processed_term)
+        @target_embed = Embedding.embed(@processed_term, type: :text)
       end
     end
 
