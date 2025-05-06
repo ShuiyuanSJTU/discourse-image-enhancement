@@ -54,6 +54,9 @@ export default class LocalImageUploader extends Component {
   }
 
   get backgroundStyle() {
+    if (isEmpty(this.imagePreviewUrl) && isEmpty(this.args.placeholderUrl)) {
+      return htmlSafe("");
+    }
     return htmlSafe(
       `background-image: url(${
         this.imagePreviewUrl || this.args.placeholderUrl
