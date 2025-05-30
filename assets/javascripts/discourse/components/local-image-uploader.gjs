@@ -36,6 +36,9 @@ export default class LocalImageUploader extends Component {
   willDestroy() {
     super.willDestroy(...arguments);
     $.magnificPopup?.instance.close();
+    if (this.imagePreviewUrl) {
+      URL.revokeObjectURL(this.imagePreviewUrl);
+    }
   }
 
   get disabled() {

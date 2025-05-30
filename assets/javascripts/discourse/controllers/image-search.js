@@ -115,15 +115,6 @@ export default class extends Controller {
     this.set("invalidSearch", false);
   }
 
-  onPageLoad() {
-    // Automatically trigger search when possible
-    if (this.get("search_type") === "image_search_by_image") {
-      return;
-    } else if (this.get("searchTerm")) {
-      this.search();
-    }
-  }
-
   @action
   search() {
     if (this.get("search_type") === "image_search_by_image") {
