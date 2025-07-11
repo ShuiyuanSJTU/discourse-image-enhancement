@@ -38,7 +38,7 @@ module ::DiscourseImageEnhancement
       return nil if image_info.blank?
       return nil if !@analyze_ocr && !@analyze_embedding
       base_uri = URI.parse(SiteSetting.image_enhancement_analyze_service_endpoint)
-      uri = URI.join(base_uri, "/analyze/")
+      uri = URI.join(base_uri, "./analyze/")
       headers = build_query_headers(uri)
       body = build_query_body(image_info)
 

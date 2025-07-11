@@ -26,7 +26,7 @@ module ::DiscourseImageEnhancement
 
     def self.perform_embedding_request(content, type)
       base_uri = URI.parse(SiteSetting.image_enhancement_analyze_service_endpoint)
-      uri = URI.join(base_uri, "/#{type}_embedding/")
+      uri = URI.join(base_uri, "./#{type}_embedding/")
       headers = build_request_headers(uri)
 
       body =
