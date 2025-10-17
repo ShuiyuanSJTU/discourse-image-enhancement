@@ -93,7 +93,6 @@ export default class ImageSearchAdvancedOptions extends SearchAdvancedOptions {
             <SearchAdvancedCategoryChooser
               @id="search-in-category"
               @value={{this.searchedTerms.category.id}}
-              @onChange={{action "onChangeSearchTermForCategory"}}
             />
           </div>
         </div>
@@ -109,7 +108,6 @@ export default class ImageSearchAdvancedOptions extends SearchAdvancedOptions {
                 @tags={{this.searchedTerms.tags}}
                 @everyTag={{true}}
                 @unlimitedTagCount={{true}}
-                @onChange={{action "onChangeSearchTermForTags"}}
                 @options={{hash
                   allowAny=false
                   headerAriaLabel=(i18n "search.advanced.with_tags.aria_label")
@@ -128,7 +126,7 @@ export default class ImageSearchAdvancedOptions extends SearchAdvancedOptions {
               @id="search-in-topic"
               @value={{this.searchedTerms.topic.id}}
               @content={{array this.searchedTerms.topic}}
-              @onChange={{action "onChangeSearchTermForTopic"}}
+              @onChange={{this.onChangeSearchTermForTopic}}
               @options={{hash additionalFilters="status:public"}}
             />
           </div>
@@ -142,7 +140,6 @@ export default class ImageSearchAdvancedOptions extends SearchAdvancedOptions {
             <UserChooser
               @id="search-posted-by"
               @value={{this.searchedTerms.username}}
-              @onChange={{action "onChangeSearchTermForUsername"}}
               @options={{hash
                 headerAriaLabel=(i18n "search.advanced.posted_by.aria_label")
                 maximum=1
@@ -162,14 +159,12 @@ export default class ImageSearchAdvancedOptions extends SearchAdvancedOptions {
               @valueProperty="value"
               @content={{this.postTimeOptions}}
               @value={{this.searchedTerms.time.when}}
-              @onChange={{action "onChangeWhenTime"}}
               @options={{hash
                 headerAriaLabel=(i18n "search.advanced.post.time.aria_label")
               }}
             />
             <DateInput
               @date={{this.searchedTerms.time.days}}
-              @onChange={{action "onChangeWhenDate"}}
               @inputId="search-post-date"
             />
           </div>
@@ -181,7 +176,7 @@ export default class ImageSearchAdvancedOptions extends SearchAdvancedOptions {
         <div class="second-search-button">
           <DButton
             @action={{this.search}}
-            @icon="search"
+            @icon="magnifying-glass"
             @label="search.search_button"
             @ariaLabel="search.search_button"
             @disabled={{this.searchButtonDisabled}}
