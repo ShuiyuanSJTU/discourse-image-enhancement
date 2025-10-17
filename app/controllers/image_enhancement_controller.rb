@@ -12,7 +12,7 @@ class ImageEnhancementController < ::ApplicationController
     if request.post?
       uploaded_image = params[:image]
       term = params[:term]
-      if !uploaded_image.blank? &&
+      if uploaded_image.present? &&
            !(
              uploaded_image.is_a?(ActionDispatch::Http::UploadedFile) &&
                uploaded_image.content_type.start_with?("image/")
