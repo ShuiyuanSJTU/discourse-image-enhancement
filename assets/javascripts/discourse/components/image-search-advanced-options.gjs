@@ -127,7 +127,6 @@ export default class ImageSearchAdvancedOptions extends SearchAdvancedOptions {
               @value={{this.searchedTerms.topic.id}}
               @content={{array this.searchedTerms.topic}}
               @onChange={{this.onChangeSearchTermForTopic}}
-              @options={{hash additionalFilters="status:public"}}
             />
           </div>
         </div>
