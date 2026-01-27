@@ -19,6 +19,6 @@ function initializePlugin(api) {
 export default {
   name: "image-search",
   initialize: function () {
-    withPluginApi("0.8.6", (api) => initializePlugin(api));
+    withPluginApi((api) => initializePlugin(api));
   },
 };

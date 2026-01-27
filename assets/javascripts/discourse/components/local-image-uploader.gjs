@@ -16,7 +16,6 @@ import { i18n } from "discourse-i18n";
 
 // Args: id, imageUrl, placeholderUrl, onFileSelected, onFileDeleted, disabled
 export default class LocalImageUploader extends Component {
-  @service currentUser;
   @service siteSettings;
 
   @tracked imagePreviewUrl;
