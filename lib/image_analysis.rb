@@ -195,7 +195,9 @@ module ::DiscourseImageEnhancement
         url = image_to_base64(upload)
       else
         url = UrlHelper.cook_url(upload.url, secure: upload.secure)
-        url = Upload.signed_url_from_secure_uploads_url(url) if Upload.secure_uploads_url?(url)
+        if Upload.secure_uploads_url?(url)
+          url = Upload.signed_url_from_secure_uploads_url(url, include_content_disposition: false)
+        end
       end
       url
     end
