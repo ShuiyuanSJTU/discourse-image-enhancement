@@ -3,16 +3,17 @@ import { tracked } from "@glimmer/tracking";
 import { on } from "@ember/modifier";
 import { action } from "@ember/object";
 import { service } from "@ember/service";
-import { htmlSafe } from "@ember/template";
+import { trustHTML } from "@ember/template";
 import { isEmpty } from "@ember/utils";
 import { modifier } from "ember-modifier";
-import $ from "jquery";
-import DButton from "discourse/components/d-button";
-import PickFilesButton from "discourse/components/pick-files-button";
-import icon from "discourse/helpers/d-icon";
 import lightbox from "discourse/lib/lightbox";
 import { bindFileInputChangeListener } from "discourse/lib/uploads";
+import DButton from "discourse/ui-kit/d-button";
+import DPickFilesButton from "discourse/ui-kit/d-pick-files-button";
+import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
+
+let localImageUploaderId = 0;
 
 // Args: id, imageUrl, placeholderUrl, onFileSelected, onFileDeleted, disabled
 export default class LocalImageUploader extends Component {
@@ -23,18 +24,17 @@ export default class LocalImageUploader extends Component {
   @tracked imageWidth;
   @tracked imageHeight;
 
-  applyLightbox = modifier(() => {
+  fallbackInputId = `local-image-uploader-${localImageUploaderId++}__input`;
+
+  applyLightbox = modifier((element) => {
     if (this.imagePreviewUrl) {
-      lightbox(
-        document.querySelector(`#${this.args.id}.image-uploader`),
-        this.siteSettings
-      );
+      lightbox(element.closest(".file-uploader"), this.siteSettings);
     }
   });
 
   willDestroy() {
     super.willDestroy(...arguments);
-    $.magnificPopup?.instance.close();
+    window.pswp?.close();
     if (this.imagePreviewUrl) {
       URL.revokeObjectURL(this.imagePreviewUrl);
     }
@@ -44,22 +44,26 @@ export default class LocalImageUploader extends Component {
     return this.args.disabled;
   }
 
+  get computedId() {
+    return this.args.id ? `${this.args.id}__input` : this.fallbackInputId;
+  }
+
   get showingPlaceholder() {
     return !this.imagePreviewUrl && this.args.placeholderUrl;
   }
 
   get placeholderStyle() {
     if (isEmpty(this.args.placeholderUrl)) {
-      return htmlSafe("");
+      return trustHTML("");
     }
-    return htmlSafe(`background-image: url(${this.args.placeholderUrl})`);
+    return trustHTML(`background-image: url(${this.args.placeholderUrl})`);
   }
 
   get backgroundStyle() {
     if (isEmpty(this.imagePreviewUrl) && isEmpty(this.args.placeholderUrl)) {
-      return htmlSafe("");
+      return trustHTML("");
     }
-    return htmlSafe(
+    return trustHTML(
       `background-image: url(${
         this.imagePreviewUrl || this.args.placeholderUrl
       })`
@@ -74,6 +78,10 @@ export default class LocalImageUploader extends Component {
   @action
   handleSelectedFile(file) {
     if (file && file.type.startsWith("image/")) {
+      if (this.imagePreviewUrl) {
+        URL.revokeObjectURL(this.imagePreviewUrl);
+      }
+
       this.imagePreviewUrl = URL.createObjectURL(file);
       this.imageFilename = file.name;
       const img = new Image();
@@ -89,6 +97,10 @@ export default class LocalImageUploader extends Component {
 
   @action
   handleDeletedFile() {
+    if (this.imagePreviewUrl) {
+      URL.revokeObjectURL(this.imagePreviewUrl);
+    }
+
     this.imagePreviewUrl = null;
     this.imageFilename = null;
     this.imageWidth = null;
@@ -98,13 +110,17 @@ export default class LocalImageUploader extends Component {
   }
 
   @action
-  toggleLightbox() {
+  async toggleLightbox() {
     const lightboxElement = document.querySelector(
       `#${this.args.id} a.lightbox`
     );
 
     if (lightboxElement) {
-      $(lightboxElement).magnificPopup("open");
+      await lightbox(
+        lightboxElement.closest(".file-uploader"),
+        this.siteSettings
+      );
+      lightboxElement.click();
     }
   }
 
@@ -136,13 +152,13 @@ export default class LocalImageUploader extends Component {
   <template>
     <div
       id={{@id}}
-      class="image-uploader {{if this.imagePreviewUrl 'has-image' 'no-image'}}"
+      class="file-uploader {{if this.imagePreviewUrl 'has-image' 'no-image'}}"
       ...attributes
       {{on "dragover" this.preventDefault}}
       {{on "drop" this.handleFileDrop}}
     >
       <div
-        class="uploaded-image-preview input-xxlarge"
+        class="file-uploader__preview input-xxlarge"
         style={{this.backgroundStyle}}
       >
         {{#if this.showingPlaceholder}}
@@ -181,17 +197,17 @@ export default class LocalImageUploader extends Component {
             />
           </div>
         {{else}}
-          <div class="image-upload-controls">
+          <div class="file-uploader__controls">
             <label
-              class="btn btn-default btn-small btn-transparent
-                {{if this.disabled 'disabled'}}"
+              class="btn btn-transparent {{if this.disabled 'disabled'}}"
               title={{this.disabledReason}}
+              for={{this.computedId}}
               tabindex="0"
               {{on "keydown" this.handleKeyboardActivation}}
             >
-              {{icon "upload"}}
-              <PickFilesButton
-                @fileInputId={{@id}}
+              {{dIcon "upload"}}
+              <DPickFilesButton
+                @fileInputId={{this.computedId}}
                 @fileInputDisabled={{this.disabled}}
                 @acceptedFormatsOverride="image/*"
                 @registerFileInput={{this.setupFileInput}}
