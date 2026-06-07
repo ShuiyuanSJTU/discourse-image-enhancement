@@ -2,11 +2,11 @@ import Component from "@glimmer/component";
 import { on } from "@ember/modifier";
 import { action } from "@ember/object";
 import { service } from "@ember/service";
-import avatar from "discourse/helpers/avatar";
-import categoryLink from "discourse/helpers/category-link";
-import discourseTags from "discourse/helpers/discourse-tags";
-import formatDate from "discourse/helpers/format-date";
 import Topic from "discourse/models/topic";
+import dAvatar from "discourse/ui-kit/helpers/d-avatar";
+import dCategoryLink from "discourse/ui-kit/helpers/d-category-link";
+import dDiscourseTags from "discourse/ui-kit/helpers/d-discourse-tags";
+import dFormatDate from "discourse/ui-kit/helpers/d-format-date";
 
 export default class extends Component {
   @service router;
@@ -78,7 +78,7 @@ export default class extends Component {
       </td>
       <td class="img-search-activity">
         <span class="date">
-          {{formatDate this.post.created_at format="tiny"}}
+          {{dFormatDate this.post.created_at format="tiny"}}
         </span>
       </td>
       <td class="img-search-topic-title topic-list-data main-link">
@@ -94,8 +94,8 @@ export default class extends Component {
           </a>
         </span>
         <div class="link-bottom-line">
-          {{categoryLink this.topic.category}}
-          {{discourseTags this.topic mode="list" tagsForUser=this.tagsForUser}}
+          {{dCategoryLink this.topic.category}}
+          {{dDiscourseTags this.topic mode="list" tagsForUser=this.tagsForUser}}
         </div>
       </td>
       <td class="img-search-post">
@@ -106,7 +106,7 @@ export default class extends Component {
       <td class="img-search-posters">
         <div class="author">
           <a href={{this.post.userPath}} data-user-card={{this.post.username}}>
-            {{avatar this.post imageSize="30px"}}
+            {{dAvatar this.post imageSize="30px"}}
           </a>
         </div>
       </td>

@@ -1,7 +1,6 @@
 import Controller from "@ember/controller";
-import { action } from "@ember/object";
+import { action, computed } from "@ember/object";
 import { ajax } from "discourse/lib/ajax";
-import discourseComputed from "discourse/lib/decorators";
 import { i18n } from "discourse-i18n";
 
 export default class extends Controller {
@@ -83,17 +82,17 @@ export default class extends Controller {
     }
   }
 
-  @discourseComputed("search_type")
+  @computed("search_type")
   displaySearchTextField() {
     return this.get("search_type") !== "image_search_by_image";
   }
 
-  @discourseComputed("search_type")
+  @computed("search_type")
   displayImageUploader() {
     return this.get("search_type") === "image_search_by_image";
   }
 
-  @discourseComputed("searching", "searchResultEntries")
+  @computed("searching", "searchResultEntries")
   resultEntries() {
     if (this.get("searching")) {
       return [];
@@ -101,7 +100,7 @@ export default class extends Controller {
     return this.get("searchResultEntries") ?? [];
   }
 
-  @discourseComputed("searchResultEntries")
+  @computed("searchResultEntries")
   hasResults() {
     return this.get("searchResultEntries").length > 0;
   }
