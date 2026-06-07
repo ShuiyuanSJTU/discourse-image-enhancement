@@ -56,7 +56,7 @@ module ::DiscourseImageEnhancement
       search_result_images = search_images_ocr(term)
       posts = posts.joins(:uploads).where(uploads: { id: search_result_images })
       posts = posts.order("posts.id": :desc)
-      posts = posts.offset(@page * offset).limit(limit)
+      posts = posts.offset(offset).limit(limit)
     end
 
     def search_images_ocr(term = nil)
