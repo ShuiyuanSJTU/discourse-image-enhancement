@@ -21,7 +21,12 @@ Rails.autoloaders.main.push_dir(File.join(__dir__, "lib"), namespace: ::Discours
 require_relative "lib/engine"
 
 after_initialize do
-  reloadable_patch { ::Upload.has_one :image_search_data }
+  reloadable_patch do
+    ::Upload.has_one :image_search_data,
+                     class_name: "ImageSearchData",
+                     foreign_key: :upload_id,
+                     inverse_of: :upload
+  end
 
   module ::DiscourseImageEnhancement
     module OverridePullHotlinkedImages

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class ImageSearchData < ActiveRecord::Base
-  belongs_to :uploads
+  belongs_to :upload
   self.primary_key = :upload_id
 
   def self.find_by_post(post)
