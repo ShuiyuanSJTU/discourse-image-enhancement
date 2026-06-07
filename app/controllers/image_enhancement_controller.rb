@@ -1,8 +1,10 @@
 # frozen_string_literal: true
-# # frozen_string_literal: true
-
 class ImageEnhancementController < ::ApplicationController
   requires_plugin ::DiscourseImageEnhancement::PLUGIN_NAME
+  requires_login
+
+  before_action :ensure_image_search_enabled
+  before_action :rate_limit_image_search, only: :search
 
   def index
     render json: {}
@@ -44,5 +46,20 @@ class ImageEnhancementController < ::ApplicationController
         guardian: Guardian.new(current_user),
       ).execute
     render_serialized(saerch_results, ImageSearchResultSerializer)
+  end
+
+  private
+
+  def ensure_image_search_enabled
+    raise Discourse::NotFound if !SiteSetting.image_search_enabled
+  end
+
+  def rate_limit_image_search
+    RateLimiter.new(
+      current_user,
+      "image-search",
+      SiteSetting.rate_limit_search_user,
+      1.minute,
+    ).performed!
   end
 end

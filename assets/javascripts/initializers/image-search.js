@@ -1,6 +1,13 @@
 import { withPluginApi } from "discourse/lib/plugin-api";
 
 function initializePlugin(api) {
+  const currentUser = api.getCurrentUser();
+  const siteSettings = api.container.lookup("service:site-settings");
+
+  if (!currentUser || !siteSettings.image_search_enabled) {
+    return;
+  }
+
   api.addFullPageSearchType(
     "search.type.images",
     "images",
