@@ -78,5 +78,48 @@ describe DiscourseImageEnhancement::ImageSearch do
       expect(result.grouped_results.map(&:image).map(&:id)).to include(image_upload2.id)
       expect(result.grouped_results.length).to eq(2)
     end
+
+    it "filters posts by guardian category access", :aggregate_failures do
+      group = Fabricate(:group)
+      private_category = Fabricate(:private_category, group: group)
+      shared_upload = Fabricate(:upload, sha1: "shared_sha1")
+      ImageSearchData.create(
+        sha1: shared_upload.sha1,
+        upload_id: shared_upload.id,
+        ocr_text: "securetoken",
+        ocr_text_search_data: "'securetoken':1",
+        embeddings: Array.new(512) { rand }.to_s,
+      )
+      public_post = Fabricate(:post, topic: Fabricate(:topic), uploads: [shared_upload])
+      private_post =
+        Fabricate(
+          :post,
+          topic: Fabricate(:topic, category: private_category),
+          uploads: [shared_upload],
+        )
+      user = Fabricate(:user)
+      member = Fabricate(:user).tap { |group_member| group.add(group_member) }
+
+      public_result =
+        described_class.new(
+          "securetoken",
+          ocr: true,
+          embeddings: false,
+          guardian: Guardian.new(user),
+        ).execute
+      member_result =
+        described_class.new(
+          "securetoken",
+          ocr: true,
+          embeddings: false,
+          guardian: Guardian.new(member),
+        ).execute
+
+      expect(public_result.grouped_results.map(&:post).map(&:id)).to contain_exactly(public_post.id)
+      expect(member_result.grouped_results.map(&:post).map(&:id)).to contain_exactly(
+        private_post.id,
+        public_post.id,
+      )
+    end
   end
 end

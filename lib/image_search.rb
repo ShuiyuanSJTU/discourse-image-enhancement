@@ -51,8 +51,12 @@ module ::DiscourseImageEnhancement
       @advanced_filter.apply_advanced_filters(posts)
     end
 
+    def searchable_posts
+      Post.visible.public_posts.secured(@guardian).merge(Topic.secured(@guardian))
+    end
+
     def search_posts_ocr(term = nil, limit:, offset:)
-      posts = apply_advanced_filters(Post.visible.public_posts)
+      posts = apply_advanced_filters(searchable_posts)
       search_result_images = search_images_ocr(term)
       posts = posts.joins(:uploads).where(uploads: { id: search_result_images })
       posts = posts.order("posts.id": :desc)
@@ -82,7 +86,7 @@ module ::DiscourseImageEnhancement
       # The `limit` and `offset` are applied to the images result, not the posts result
       # So there may be more posts in the result than the `limit`
 
-      posts = apply_advanced_filters(Post.visible.public_posts)
+      posts = apply_advanced_filters(searchable_posts)
       search_result_images =
         search_images_embedding(target_embed, limit: limit, offset: offset, threshold: threshold)
       image_ids = search_result_images.map(&:upload_id)
