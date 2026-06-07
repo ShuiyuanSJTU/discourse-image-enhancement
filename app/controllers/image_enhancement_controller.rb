@@ -42,6 +42,8 @@ class ImageEnhancementController < ::ApplicationController
         guardian: Guardian.new(current_user),
       ).execute
     render_serialized(saerch_results, ImageSearchResultSerializer)
+  rescue ::DiscourseImageEnhancement::ExternalServiceError
+    render_json_error(I18n.t("image_search.errors.service_unavailable"), status: 503)
   end
 
   private

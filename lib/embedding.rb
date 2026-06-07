@@ -25,9 +25,8 @@ module ::DiscourseImageEnhancement
     private
 
     def self.perform_embedding_request(content, type)
-      base_uri = URI.parse(SiteSetting.image_enhancement_analyze_service_endpoint)
-      uri = URI.join(base_uri, "./#{type}_embedding/")
-      headers = build_request_headers(uri)
+      uri = embedding_uri(type)
+      headers = build_request_headers
 
       body =
         if type == :image
@@ -39,31 +38,48 @@ module ::DiscourseImageEnhancement
           { text: content }
         end
 
-      connection =
-        Faraday.new do |f|
-          f.request :json
-          f.adapter FinalDestination::FaradayAdapter
-          f.options.timeout = 30
-          f.options.open_timeout = 30
-        end
-      response = connection.post(uri, body, headers)
-
+      response = embedding_connection.post(uri, body, headers)
       if response.status != 200
-        Rails.logger.warn("Failed to embed #{type} #{response.status}: #{response.body}")
-        raise "Failed to embed #{type} #{response.status}: #{response.body}"
+        raise_embedding_error(type, "status=#{response.status} body=#{response.body}")
       end
 
       result = JSON.parse(response.body, symbolize_names: true)
-      raise "Failed to embed #{type} #{response.status}: #{response.body}" unless result[:success]
-      result[:embedding]
+      embedding = result[:embedding] if result.is_a?(Hash)
+
+      if !result.is_a?(Hash) || !result[:success] || !embedding.is_a?(Array)
+        raise_embedding_error(type, "invalid response body=#{response.body}")
+      end
+
+      embedding
+    rescue Faraday::Error, JSON::ParserError, URI::Error => e
+      raise_embedding_error(type, e.message)
     end
 
-    def self.build_request_headers(uri)
+    def self.embedding_uri(type)
+      base_uri = URI.parse(SiteSetting.image_enhancement_analyze_service_endpoint)
+      URI.join(base_uri, "./#{type}_embedding/")
+    end
+
+    def self.embedding_connection
+      Faraday.new do |f|
+        f.request :json
+        f.adapter FinalDestination::FaradayAdapter
+        f.options.timeout = 30
+        f.options.open_timeout = 30
+      end
+    end
+
+    def self.build_request_headers
       {
         "User-Agent" => "Discourse/#{Discourse::VERSION::STRING}",
         "X-Discourse-Instance" => Discourse.base_url,
         "api-key" => SiteSetting.image_enhancement_analyze_service_key,
       }
+    end
+
+    def self.raise_embedding_error(type, details)
+      Rails.logger.warn("Failed to embed #{type}: #{details}")
+      raise ExternalServiceError, "Failed to generate embedding"
     end
   end
 end

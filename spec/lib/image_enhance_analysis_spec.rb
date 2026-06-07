@@ -119,6 +119,20 @@ describe DiscourseImageEnhancement::ImageAnalysis do
       described_class.new.process_image(image_upload)
       expect(ImageSearchData.find_by(sha1: image_upload.sha1).ocr_text).to eq("a car")
     end
+    it "can save partially successful analysis data" do
+      WebMock.stub_request(:post, "https://api.example.com/analyze/").to_return(
+        body: {
+          images: [{ sha1: image_upload.sha1, embedding: Array.new(512) { rand }, success: true }],
+        }.to_json,
+      )
+
+      described_class.new.process_image(image_upload)
+
+      image_search_data = ImageSearchData.find_by(sha1: image_upload.sha1)
+      expect(image_search_data.ocr_text).to eq(nil)
+      expect(image_search_data.embeddings).to be_present
+      expect(image_search_data.retry_times).to eq(0)
+    end
     it "can reuse existing data" do
       new_upload = Fabricate(:image_upload, original_sha1: image_upload.sha1)
       ImageSearchData.create(
@@ -132,6 +146,21 @@ describe DiscourseImageEnhancement::ImageAnalysis do
       described_class.new.process_image(image_upload)
       expect(ImageSearchData.find_by(sha1: image_upload.sha1).ocr_text).to eq("a car")
       expect(ImageSearchData.where(sha1: image_upload.sha1).count).to eq(2)
+    end
+    it "records a failed retry when the analyze service fails" do
+      WebMock.stub_request(:post, "https://api.example.com/analyze/").to_return(
+        status: 500,
+        body: "secret upstream details",
+      )
+
+      expect(described_class.new.process_image(image_upload)).to eq(nil)
+      expect(ImageSearchData.find_by(upload_id: image_upload.id).retry_times).to eq(1)
+    end
+    it "records a failed retry when the analyze response is malformed" do
+      WebMock.stub_request(:post, "https://api.example.com/analyze/").to_return(body: "not-json")
+
+      expect(described_class.new.process_image(image_upload)).to eq(nil)
+      expect(ImageSearchData.find_by(upload_id: image_upload.id).retry_times).to eq(1)
     end
   end
 end

@@ -1,4 +1,7 @@
 en:
+  image_search:
+    errors:
+      service_unavailable: "Image search service is temporarily unavailable."
   site_settings:
     image_enhancement_enabled: "Enable image enhancement plugin"
     image_search_enabled: "Enable image search"

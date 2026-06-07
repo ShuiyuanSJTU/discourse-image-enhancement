@@ -37,54 +37,43 @@ module ::DiscourseImageEnhancement
     def analyze_images(image_info)
       return nil if image_info.blank?
       return nil if !@analyze_ocr && !@analyze_embedding
-      base_uri = URI.parse(SiteSetting.image_enhancement_analyze_service_endpoint)
-      uri = URI.join(base_uri, "./analyze/")
-      headers = build_query_headers(uri)
+      uri = analyze_uri
+      headers = build_query_headers
       body = build_query_body(image_info)
 
-      connection =
-        Faraday.new do |f|
-          f.request :json
-          f.adapter FinalDestination::FaradayAdapter
-          f.options.timeout = 30
-          f.options.open_timeout = 30
-        end
-
       begin
-        response = connection.post(uri, body, headers)
-      rescue => e
-        Rails.logger.warn("Failed to analyze images: #{e.message}")
-        return nil
+        response = analysis_connection.post(uri, body, headers)
+      rescue Faraday::Error, URI::Error => e
+        return record_analysis_failure(image_info, e.message)
       end
 
       if response.status != 200
-        Rails.logger.warn("Failed to analyze images #{response.status}: #{response.body}")
-        return nil
+        details = "status=#{response.status} body=#{response.body}"
+        return record_analysis_failure(image_info, details)
       end
 
       sha1_to_upload_id = image_info.map { |i| [i[:sha1], i[:id]] }.to_h
-      result = JSON.parse(response.body, symbolize_names: true)
+      result = parse_analysis_response(response.body)
+      if result.nil?
+        return record_analysis_failure(image_info, "invalid response body=#{response.body}")
+      end
+
+      success_sha1s = []
       result[:images].each do |image_result|
-        next unless image_result[:success]
+        next unless valid_image_result?(image_result)
         upload_id = sha1_to_upload_id[image_result[:sha1]]
         next if upload_id.blank?
         upload = Upload.find_by(id: upload_id)
         next if upload.blank?
         save_analyzed_image_data(image_result, upload)
+        success_sha1s << image_result[:sha1]
       end
 
-      if @record_failed
-        success_sha1s = result[:images].select { |i| i[:success] }.map { |i| i[:sha1] }
-        failed_sha1s = image_info.map { |i| i[:sha1] } - success_sha1s
-        failed_sha1s.each do |sha1|
-          upload_id = sha1_to_upload_id[sha1]
-          search_data = ImageSearchData.find_or_initialize_by(upload_id: upload_id, sha1: sha1)
-          search_data.retry_times += 1
-          search_data.save!
-        end
-      end
+      record_failed_images(image_info, image_info.map { |i| i[:sha1] } - success_sha1s)
 
       result
+    rescue JSON::ParserError, URI::Error => e
+      record_analysis_failure(image_info, e.message)
     end
 
     def process_post(post)
@@ -94,7 +83,7 @@ module ::DiscourseImageEnhancement
       return nil if image_info.blank?
       return nil if image_info.length > SiteSetting.image_enhancement_max_images_per_post
       result = analyze_images(image_info)
-      check_for_flag(post)
+      check_for_flag(post) if result.present?
       result
     end
 
@@ -206,12 +195,64 @@ module ::DiscourseImageEnhancement
       { "images" => images, "ocr" => @analyze_ocr, "embedding" => @analyze_embedding }
     end
 
-    def build_query_headers(uri)
+    def analyze_uri
+      base_uri = URI.parse(SiteSetting.image_enhancement_analyze_service_endpoint)
+      URI.join(base_uri, "./analyze/")
+    end
+
+    def analysis_connection
+      Faraday.new do |f|
+        f.request :json
+        f.adapter FinalDestination::FaradayAdapter
+        f.options.timeout = 30
+        f.options.open_timeout = 30
+      end
+    end
+
+    def build_query_headers
       {
         "User-Agent" => "Discourse/#{Discourse::VERSION::STRING}",
         "X-Discourse-Instance" => Discourse.base_url,
         "api-key" => SiteSetting.image_enhancement_analyze_service_key,
       }
+    end
+
+    def parse_analysis_response(body)
+      result = JSON.parse(body, symbolize_names: true)
+      return nil if !result.is_a?(Hash) || !result[:images].is_a?(Array)
+      result
+    end
+
+    def valid_image_result?(image_result)
+      return false if !image_result.is_a?(Hash) || !image_result[:success]
+      return false if image_result[:sha1].blank?
+      return false if image_result[:ocr_result].present? && !image_result[:ocr_result].is_a?(Array)
+      return false if image_result[:embedding].present? && !image_result[:embedding].is_a?(Array)
+
+      (@analyze_ocr && image_result[:ocr_result].is_a?(Array)) ||
+        (@analyze_embedding && image_result[:embedding].is_a?(Array))
+    end
+
+    def record_analysis_failure(image_info, details)
+      Rails.logger.warn("Failed to analyze images: #{details}")
+      record_failed_images(image_info, image_info.map { |image| image[:sha1] })
+      nil
+    end
+
+    def record_failed_images(image_info, failed_sha1s)
+      failed_sha1s = failed_sha1s.compact.uniq
+      return if !@record_failed || failed_sha1s.blank?
+
+      sha1_to_upload_id = image_info.map { |image| [image[:sha1], image[:id]] }.to_h
+      failed_sha1s.each do |sha1|
+        upload_id = sha1_to_upload_id[sha1]
+        next if upload_id.blank?
+
+        search_data = ImageSearchData.find_or_initialize_by(upload_id: upload_id)
+        search_data.sha1 = sha1 if search_data.sha1.blank?
+        search_data.retry_times = search_data.retry_times.to_i + 1
+        search_data.save!
+      end
     end
 
     def check_for_flag(post)

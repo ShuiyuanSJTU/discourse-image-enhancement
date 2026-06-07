@@ -153,6 +153,21 @@ RSpec.describe ::ImageEnhancementController do
       it "rejects unsupported image types" do
         expect_invalid_image_search(uploaded_image("animated.gif", content_type: "image/gif"))
       end
+
+      it "returns a generic error when the embedding service fails" do
+        WebMock.stub_request(:post, "https://api.example.com/text_embedding/").to_return(
+          status: 500,
+          body: "secret upstream details",
+        )
+
+        get "/image-search/search.json", params: { term: "service failure", ocr: "false" }
+
+        expect(response.status).to eq(503)
+        expect(response.parsed_body["errors"]).to include(
+          I18n.t("image_search.errors.service_unavailable"),
+        )
+        expect(response.body).not_to include("secret upstream details")
+      end
     end
 
     context "when the user is anonymous" do
