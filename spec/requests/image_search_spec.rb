@@ -9,6 +9,20 @@ RSpec.describe ::ImageEnhancementController do
     Struct.new(:search_result) { def execute = search_result }.new(search_result)
   end
 
+  def uploaded_image(filename, content_type: "image/png")
+    Rack::Test::UploadedFile
+      .new(file_from_fixtures(filename))
+      .tap { |file| file.content_type = content_type }
+  end
+
+  def expect_invalid_image_search(image)
+    ::DiscourseImageEnhancement::ImageSearch.expects(:new).never
+
+    post "/image-search/search.json", params: { term: "", image: image }
+
+    expect(response.status).to eq(400)
+  end
+
   before do
     SiteSetting.image_enhancement_enabled = true
     SiteSetting.image_search_enabled = true
@@ -89,8 +103,7 @@ RSpec.describe ::ImageEnhancementController do
       end
 
       it "searches by image" do
-        file = Rack::Test::UploadedFile.new(file_from_fixtures("logo.png"))
-        file.content_type = "image/png"
+        file = uploaded_image("large_icon_correct.png")
         ::DiscourseImageEnhancement::ImageSearch
           .expects(:new)
           .with(
@@ -107,6 +120,38 @@ RSpec.describe ::ImageEnhancementController do
                ocr: "false",
                embed: "false",
              }
+
+        expect(response.status).to eq(200)
+      end
+
+      it "rejects a non-upload image parameter" do
+        expect_invalid_image_search("not-an-upload")
+      end
+
+      it "rejects a non-image content type" do
+        expect_invalid_image_search(
+          uploaded_image("large_icon_correct.png", content_type: "text/plain"),
+        )
+      end
+
+      it "rejects an invalid image file" do
+        expect_invalid_image_search(uploaded_image("fake.jpg", content_type: "image/jpeg"))
+      end
+
+      it "rejects an oversized image file" do
+        SiteSetting.image_enhancement_max_image_size_kb = 1
+
+        expect_invalid_image_search(uploaded_image("2000x2000.png"))
+      end
+
+      it "rejects images smaller than the minimum dimensions" do
+        SiteSetting.image_enhancement_min_image_height = 100
+
+        expect_invalid_image_search(uploaded_image("logo.png"))
+      end
+
+      it "rejects unsupported image types" do
+        expect_invalid_image_search(uploaded_image("animated.gif", content_type: "image/gif"))
       end
     end
 
