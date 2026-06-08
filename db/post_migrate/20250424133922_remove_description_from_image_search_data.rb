@@ -8,17 +8,6 @@ class RemoveDescriptionFromImageSearchData < ActiveRecord::Migration[7.2]
   end
 
   def down
-    unless column_exists?(:image_search_data, :description)
-      add_column :image_search_data, :description, :text
-    end
-    unless column_exists?(:image_search_data, :description_search_data)
-      add_column :image_search_data, :description_search_data, :tsvector
-    end
-    unless index_exists?(:image_search_data, :description_search_data)
-      add_index :image_search_data,
-                :description_search_data,
-                using: :gin,
-                name: "index_image_search_data_on_description_search_data"
-    end
+    raise ActiveRecord::IrreversibleMigration
   end
 end

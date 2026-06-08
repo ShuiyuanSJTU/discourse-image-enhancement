@@ -25,18 +25,6 @@ class AddUploadIdToImageSearchData < ActiveRecord::Migration[7.2]
   end
 
   def down
-    remove_foreign_key :image_search_data, :uploads
-
-    execute <<~SQL.squish
-      INSERT INTO image_search_data (sha1, ocr_text, description, ocr_text_search_data, description_search_data)
-      SELECT DISTINCT ON (sha1) sha1, ocr_text, description, ocr_text_search_data, description_search_data
-      FROM image_search_data
-      WHERE upload_id IS NOT NULL
-    SQL
-
-    remove_column :image_search_data, :upload_id
-
-    remove_index :image_search_data, :sha1
-    add_index :image_search_data, :sha1, unique: true
+    raise ActiveRecord::IrreversibleMigration
   end
 end

@@ -15,6 +15,6 @@ class CreateImageSearchData < ActiveRecord::Migration[6.0]
   end
 
   def down
-    drop_table :image_search_data
+    raise ActiveRecord::IrreversibleMigration
   end
 end
