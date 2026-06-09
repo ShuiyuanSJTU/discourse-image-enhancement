@@ -83,17 +83,17 @@ export default class extends Controller {
   }
 
   @computed("search_type")
-  displaySearchTextField() {
+  get displaySearchTextField() {
     return this.get("search_type") !== "image_search_by_image";
   }
 
   @computed("search_type")
-  displayImageUploader() {
+  get displayImageUploader() {
     return this.get("search_type") === "image_search_by_image";
   }
 
   @computed("searching", "searchResultEntries")
-  resultEntries() {
+  get resultEntries() {
     if (this.get("searching")) {
       return [];
     }
@@ -101,7 +101,7 @@ export default class extends Controller {
   }
 
   @computed("searchResultEntries")
-  hasResults() {
+  get hasResults() {
     return this.get("searchResultEntries").length > 0;
   }
 
